@@ -1,0 +1,4 @@
+[submodule "stack"]
+	path = stack
+	url = https://github.com/Alexandr26Starostin/stack.git
+	branch = master
