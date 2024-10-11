@@ -17,7 +17,7 @@ void run ()
 	stk_t stk = {};
 	if (stk_ctor (&stk, DEFAULT_LEN_STK) != 0) {abort ();}
 
-	FILE* guide_file = fopen ("guide.txt", "r");
+	FILE* guide_file = fopen ("../guide.txt", "r");
 	if (guide_file == NULL) {printf ("Can't open guide.txt\n"); abort ();}
 
 	while (true)
