@@ -25,6 +25,9 @@ int main (int argc, char** argv)
 
 	translation (code_file, cmd_file);
 
+	fclose (code_file); 
+	fclose (cmd_file); 
+
 	return NICE;
 }
 
@@ -71,6 +74,8 @@ void static translation (FILE* code_file, FILE* cmd_file)
 
 	int value = 0;
 
+	fscanf (code_file, "%d", &value);
+	
 	while (fscanf (code_file, "%d", &value) != EOF)
 	{
 		if (value == 1)

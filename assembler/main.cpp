@@ -5,7 +5,7 @@
 
 const size_t MAX_LETTERS = 50;
 
-enum work_asm__t
+enum work_asm_t
 {
 	BAD  = 0,
 	NICE = 1
@@ -26,6 +26,8 @@ int main (int argc, char** argv)
 	if (find_file (argc, argv, &cmd_file, &code_file) == BAD) {return BAD;}
 
 	translation (cmd_file, code_file);
+
+	fclose (cmd_file);
 
 	return NICE;
 }
@@ -71,7 +73,11 @@ void static translation (FILE* cmd_file, FILE* code_file)
 	assert (cmd_file);
 	assert (code_file);
 
+	size_t index_cmd = 0;
+
 	char str[MAX_LETTERS] = "";
+
+	fprintf (code_file, "11111111\n");
 
 	while (fscanf (cmd_file, "%s", str) != EOF)
 	{
@@ -89,6 +95,8 @@ void static translation (FILE* cmd_file, FILE* code_file)
 
 			fscanf  (cmd_file, "%s", str);
 			fprintf (code_file, "%s\n", str);
+
+			index_cmd += 2;
 			continue;
 		}
 
@@ -97,6 +105,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "add") == 0)
 		{
 			fprintf (code_file, "2\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -105,6 +114,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "sub") == 0)
 		{
 			fprintf (code_file, "3\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -113,6 +123,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "mul") == 0)
 		{
 			fprintf (code_file, "4\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -121,6 +132,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "div") == 0)
 		{
 			fprintf (code_file, "5\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -129,6 +141,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "out") == 0)
 		{
 			fprintf (code_file, "6\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -137,6 +150,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "in") == 0)
 		{
 			fprintf (code_file, "7\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -145,6 +159,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "sqrt") == 0)
 		{
 			fprintf (code_file, "8\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -153,6 +168,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "sin") == 0)
 		{
 			fprintf (code_file, "9\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -161,6 +177,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "cos") == 0)
 		{
 			fprintf (code_file, "10\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -169,6 +186,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "dump") == 0)
 		{
 			fprintf (code_file, "11\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -177,6 +195,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "guide") == 0)
 		{
 			fprintf (code_file, "0\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -185,6 +204,7 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		if (strcmp (str, "hlt") == 0)
 		{
 			fprintf (code_file, "-1\n");
+			index_cmd += 1;
 			continue;
 		}
 
@@ -194,4 +214,21 @@ void static translation (FILE* cmd_file, FILE* code_file)
 		
 		abort ();
 	}
+
+	fclose (code_file);
+
+	code_file = fopen ("../code.txt", "r+");
+
+	fprintf (code_file, "%ld", index_cmd);
+
+	size_t indent = 8 - ((index_cmd/10) + 1);
+
+	for (size_t index = 0; index < indent; index++)
+	{
+		fprintf (code_file, " ");
+	}
+
+	fprintf (code_file, "\n");
+
+	fclose (code_file);
 }
