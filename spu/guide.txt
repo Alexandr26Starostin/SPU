@@ -1,0 +1,13 @@
+hlt   -1
+guide  0
+push   1
+add    2
+sub    3
+mul    4
+div    5
+out    6
+in     7
+sqrt   8
+sin    9
+cos    10
+dump   11

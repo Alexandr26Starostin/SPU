@@ -9,24 +9,41 @@
 
 #include "../include/run.h"
 
-const size_t MAX_LETTERS     = 50;
-const size_t DEFAULT_LEN_STK = 16;
+const size_t MAX_LETTERS     = 30;
+const size_t DEFAULT_LEN_STK = 32;
 
 void run ()
 {
 	stk_t stk = {};
+	if (stk_ctor (&stk, DEFAULT_LEN_STK) != 0) {abort ();}
 
-	stk_ctor (&stk, DEFAULT_LEN_STK);
+	FILE* guide_file = fopen ("guide.txt", "r");
+	if (guide_file == NULL) {printf ("Can't open guide.txt\n"); abort ();}
 
 	while (true)
 	{
-		char cmd[MAX_LETTERS] = "";
+		int cmd = 0;
 
-		scanf ("%s", cmd);
+		scanf ("%d", &cmd);
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("push", cmd) == 0)
+		if (GUIDE == cmd)
+		{
+			char str[MAX_LETTERS] = "";
+			while (fgets (str, MAX_LETTERS, guide_file) != NULL)
+			{
+				printf ("%s", str);
+			}
+
+			printf ("\n");
+
+			continue;
+		}
+
+		//------------------------------------------------------------------------------------------
+
+		if (PUSH == cmd)
 		{
 			element_t arg = 0;
 			scanf ("%d", &arg);
@@ -38,7 +55,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("add", cmd) == 0)
+		if (ADD == cmd)
 		{
 			element_t a = 0, b = 0;
 			stk_pop (&stk, &a);
@@ -51,7 +68,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("sub", cmd) == 0)
+		if (SUB == cmd)
 		{
 			element_t a = 0, b = 0;
 			stk_pop (&stk, &a);
@@ -64,7 +81,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("mul", cmd) == 0)
+		if (MUL == cmd)
 		{
 			element_t a = 0, b = 0;
 			stk_pop (&stk, &a);
@@ -77,7 +94,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("div", cmd) == 0)
+		if (DIV == cmd)
 		{
 			element_t a = 0, b = 0;
 			stk_pop (&stk, &a);
@@ -90,7 +107,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("out", cmd) == 0)
+		if (OUT == cmd)
 		{
 			element_t arg = 0;
 			stk_pop (&stk, &arg);
@@ -102,7 +119,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("in", cmd) == 0)
+		if (IN == cmd)
 		{
 			element_t arg = 0;
 			scanf ("%d", &arg);
@@ -114,7 +131,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("sqrt", cmd) == 0)
+		if (SQRT == cmd)
 		{
 			element_t arg = 0;
 			stk_pop (&stk, &arg);
@@ -126,7 +143,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("sin", cmd) == 0)
+		if (SIN == cmd)
 		{
 			element_t arg = 0;
 			stk_pop (&stk, &arg);
@@ -138,7 +155,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("cos", cmd) == 0)
+		if (COS == cmd)
 		{
 			element_t arg = 0;
 			stk_pop (&stk, &arg);
@@ -150,7 +167,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("dump", cmd) == 0)
+		if (DUMP == cmd)
 		{
 			stk_dump (&stk, __FILE__, __LINE__);
 
@@ -159,7 +176,7 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		if (strcmp ("hlt", cmd) == 0)
+		if (HLT == cmd)
 		{
 			stk_dtor (&stk);
 
@@ -168,6 +185,8 @@ void run ()
 
 		//------------------------------------------------------------------------------------------
 
-		printf ("SNT_ERROR: '%s'\n", cmd);
+		printf ("SNT_ERROR: '%d'\n", cmd);
 	}
+
+	 fclose (guide_file);
 }
