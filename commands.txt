@@ -1,0 +1,9 @@
+push 30
+push 70
+add         #push (pop + pop);
+push 80
+push 60
+sub         #push (pop - pop);
+div         #push (pop / pop);
+out         #printf ("%d\n", pop);
+hlt

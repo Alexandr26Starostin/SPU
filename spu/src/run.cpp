@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <string.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "../../stack/include/const_define_struct.h"
 #include "../../stack/include/hash.h"
@@ -9,7 +9,6 @@
 
 #include "../include/run.h"
 
-const size_t MAX_LETTERS     = 30;
 const size_t DEFAULT_LEN_STK = 32;
 
 void run ()
