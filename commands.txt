@@ -1,13 +1,18 @@
-push 30
-push 70
+push 0
+pop AX      #AX = 0
+push AX
+push AX
+mul
+out         #AX * AX
+
+push AX
+push 1
 add
-push 80
-push 60
-sub
-div
-out
-in
-in
-add
-out
+pop AX      #AX++
+
+push AX
+push 10
+
+ja 4
+
 hlt

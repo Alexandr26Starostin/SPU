@@ -16,7 +16,5 @@ int main (int argc, char** argv)
 
 	run (code_file);
 
-	fclose (code_file);
-
 	return NICE;
 }

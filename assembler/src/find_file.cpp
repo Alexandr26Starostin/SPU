@@ -4,6 +4,9 @@
 #include "../include/const.h"
 #include "../include/find_file.h"
 
+#define NAME_CMD_FILE  "../commands.txt"
+#define NAME_CODE_FILE "../code.txt"
+
 int find_file (int argc, char** argv, FILE** ptr_cmd_file, FILE** ptr_code_file)
 {
 	assert (argv);	
@@ -12,8 +15,8 @@ int find_file (int argc, char** argv, FILE** ptr_cmd_file, FILE** ptr_code_file)
 
 	if (argc == 1)
 	{
-		*ptr_cmd_file  = fopen ("../commands.txt", "r"); // TODO make define
-		*ptr_code_file = fopen ("../code.txt", "w");
+		*ptr_cmd_file  = fopen (NAME_CMD_FILE, "r"); 
+		*ptr_code_file = fopen (NAME_CODE_FILE, "w");
 	}
 
 	else if (argc >= 3)

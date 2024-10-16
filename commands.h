@@ -1,21 +1,24 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
-enum command_t
+enum command_t : long
 {
-	HLT   = -1,
-	GUIDE = 0,
-	PUSH  = 1,
-	ADD   = 2,
-	SUB   = 3,
-	MUL   = 4,
-	DIV   = 5,
-	OUT   = 6,
-	IN    = 7,
-	SQRT  = 8,
-	SIN   = 9,
-	COS   = 10,
-	DUMP  = 11
+	GUIDE = 0x00,
+	PUSH  = 0x01,
+	ADD   = 0x02,
+	SUB   = 0x03,
+	MUL   = 0x04,
+	DIV   = 0x05,
+	OUT   = 0x06,
+	IN    = 0x07,
+	SQRT  = 0x08,
+	SIN   = 0x09,
+	DUMP  = 0x0A,
+	HLT   = 0x0B,
+	POP   = 0x0C,
+	JMP   = 0x0D,
+	JA    = 0x0E,
+	JB    = 0x0F
 };
 
 #endif

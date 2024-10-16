@@ -4,34 +4,103 @@
 #include <string.h>
 
 const size_t MAX_LETTERS     = 50;
-const size_t DEFAULT_LEN_CMD = 64;
+const size_t DEFAULT_LEN_STK = 64;
+const size_t SIZE_HEADER     = 1;
 
+#include "../../stack/include/const_define_struct.h"
+#include "../../stack/include/hash.h"
+#include "../../stack/include/operations_with_stack.h"
+#include "../../stack/include/stk_error.h"
+
+#include "../include/const.h"
 #include "../../commands.h"
 #include "../include/translation.h"
 
-/*void static read_file  (int* commands, size_t* ip, FILE* file);
-void static write_file (int* commands, size_t* index_cmd, FILE* file);*/
+int static  read_file  (stk_t* ptr_cmd, FILE* cmd_file);
+int static  write_file (stk_t* ptr_cmd, FILE* code_file);
+
+#define COMPARE_STR_CMD(str, name_cmd, cmd)                                        \
+	if (strcmp (str, name_cmd) == 0)                                               \
+	{                                                                              \
+		stk_push (ptr_cmd, cmd);                                                   \
+		continue;                                                                  \
+	}              
+
+#define COMPARE_OM_JUMP(str, name_cmd, cmd)      \
+	if (strcmp (str, name_cmd) == 0)             \
+	{                                            \
+		stk_push (ptr_cmd, cmd);                 \
+                                                 \
+		int arg = 0;                             \
+		fscanf  (cmd_file, "%x", &arg);          \
+                                                 \
+		stk_push (ptr_cmd, arg);                 \
+		continue;                                \
+	}
+
+#define DEBUG_NOT
+
+#ifdef DEBUG
+	void static print_cmd (stk_t* ptr_cmd);  
+#endif
 
 //-------------------------------------------------------------------------------------------------------------
 
-void translation (FILE* cmd_file, FILE* code_file)
+int translation (FILE* cmd_file, FILE* code_file)
 {
 	assert (cmd_file);
 	assert (code_file);
 
-	int* commands = (int*) calloc (DEFAULT_LEN_CMD, sizeof (int));
-	if (commands == NULL) {fclose (cmd_file); fclose (code_file); abort ();}
+	stk_t cmd = {};
+	if (stk_ctor (&cmd, DEFAULT_LEN_STK) != 0) {abort ();} //!
 
-	size_t index_cmd = 0;
+	for (size_t index = 0; index < SIZE_HEADER; index++)
+	{
+		stk_push (&cmd, 0);
+	}
 
-	// (commands, &index_cmd, cmd_file);     index_cmd = 1;
+	if (read_file (&cmd, cmd_file) == BAD)
+	{
+		fprintf  (code_file, "BAD_FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+		fclose   (code_file);
+		fclose   (cmd_file);
+		stk_dtor (&cmd);
+
+		return BAD;
+	}
+
+	*(cmd.data + 0) = (int) (cmd.size - SIZE_HEADER);
+
+	if (write_file (&cmd, code_file) ==  BAD)
+	{
+		fclose   (code_file);
+		fclose   (cmd_file);
+		stk_dtor (&cmd);
+
+		return BAD;
+	}
+
+	fclose (code_file);
+	fclose (cmd_file);
+	stk_dtor (&cmd);
+
+	return NICE;  
+}
+//--------------------------------------------------------------------------------------------------------------
+
+int static read_file  (stk_t* ptr_cmd, FILE* cmd_file)
+{
+	assert (ptr_cmd);
+	assert (cmd_file);
 
 	char str[MAX_LETTERS] = "";
-
-	fprintf (code_file, "00000000\n");
 
 	while (fscanf (cmd_file, "%s", str) != EOF)
 	{
+		#ifdef DEBUG 
+			print_cmd (ptr_cmd);
+		#endif
+
 		if (str[0] == '#') 
 		{
 			fgets (str, MAX_LETTERS, cmd_file); 
@@ -41,318 +110,127 @@ void translation (FILE* cmd_file, FILE* code_file)
 		//----------------------------------------------------------------------------------------------
 
 		if (strcmp (str, "push") == 0)
+		{		
+			int arg = 0;
+			if (fscanf  (cmd_file, "%d", &arg) != 0) 
+			{
+				stk_push (ptr_cmd, PUSH | 0x10);
+				stk_push (ptr_cmd, arg);
+				continue;
+			}
+
+			char reg = 0;
+			if (fscanf  (cmd_file, "%cX", &reg) != 0)
+			{
+				stk_push (ptr_cmd, PUSH | 0x20);
+
+				for (int index_reg = 'A'; index_reg <= 'D'; index_reg++)
+				{
+					if (reg == index_reg)
+					{
+						stk_push (ptr_cmd, index_reg - 'A' + 1);
+						break;
+					}
+				}
+				continue;
+			}
+			
+			printf ("ERROR IN SNT PUSH\n");
+			abort ();
+		}
+
+		if (strcmp (str, "pop") == 0)
 		{
-			fprintf (code_file, "%d ", PUSH);
+			stk_push (ptr_cmd, POP | 0x20);
 
-			fscanf  (cmd_file, "%s", str);
-			fprintf (code_file, "%s\n", str);
+			char reg[MAX_LETTERS] = "";
+			fscanf (cmd_file, "%s", reg);
 
-			index_cmd += 2;
+			for (int index_reg = 'A'; index_reg <= 'D'; index_reg++)
+			{
+				if (reg[0] == index_reg)
+				{
+					stk_push (ptr_cmd, index_reg - 'A' + 1);
+					break;
+				}
+			}
 			continue;
 		}
 
-		//----------------------------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------------------------------
 
-		if (strcmp (str, "add") == 0)
-		{
-			fprintf (code_file, "%d\n", ADD);
-			index_cmd += 1;
-			continue;
-		}
+		COMPARE_OM_JUMP(str, "jmp", JMP);
+		COMPARE_OM_JUMP(str, "ja",  JA);
+		COMPARE_OM_JUMP(str, "jb",  JB);
 
-		//----------------------------------------------------------------------------------------------
+		//------------------------------------------------------------------------------------------------------
 
-		if (strcmp (str, "sub") == 0)
-		{
-			fprintf (code_file, "%d\n", SUB);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "mul") == 0)
-		{
-			fprintf (code_file, "%d\n", MUL);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "div") == 0)
-		{
-			fprintf (code_file, "%d\n", DIV);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "out") == 0)
-		{
-			fprintf (code_file, "%d\n", OUT);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "in") == 0)
-		{
-			fprintf (code_file, "%d\n", IN);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "sqrt") == 0)
-		{
-			fprintf (code_file, "%d\n", SQRT);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "sin") == 0)
-		{
-			fprintf (code_file, "%d\n", SIN);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "cos") == 0)
-		{
-			fprintf (code_file, "%d\n", COS);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "dump") == 0)
-		{
-			fprintf (code_file, "%d\n", DUMP);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "guide") == 0)
-		{
-			fprintf (code_file, "%d\n", GUIDE);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "hlt") == 0)
-		{
-			fprintf (code_file, "%d\n", HLT);
-			index_cmd += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
+		COMPARE_STR_CMD(str, "out",   OUT);
+		COMPARE_STR_CMD(str, "add",   ADD);
+		COMPARE_STR_CMD(str, "sub",   SUB);
+		COMPARE_STR_CMD(str, "mul",   MUL);
+		COMPARE_STR_CMD(str, "div",   DIV);
+		COMPARE_STR_CMD(str, "in",    IN);
+		COMPARE_STR_CMD(str, "sqrt",  SQRT);
+		COMPARE_STR_CMD(str, "sin",   SIN);
+		COMPARE_STR_CMD(str, "dump",  DUMP);
+		COMPARE_STR_CMD(str, "guide", GUIDE);
+		COMPARE_STR_CMD(str, "hlt",   HLT);
 
 		printf ("SNT_ERROR:\n command: '%s' don't find\n", str);
-		fprintf (code_file, "BAD_FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
-		fclose (code_file);
-		fclose (cmd_file);
-		
-		abort ();
+		return BAD;
 	}
 
-	fclose (code_file);
+	#ifdef DEBUG
+		print_cmd (ptr_cmd);
+	#endif
 
-	code_file = fopen ("../code.txt", "r+");
-
-	fprintf (code_file, "%ld", index_cmd);
-
-	size_t indent = 8 - ((index_cmd/10) + 1);
-
-	for (size_t index = 0; index < indent; index++)
-	{
-		fprintf (code_file, " ");
-	}
-
-	fprintf (code_file, "\n");
-
-	fclose (code_file);
+	return NICE;
 }
 
-/*
-void static read_file  (int* commands, size_t* ip, FILE* file)
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+int static write_file (stk_t* ptr_cmd, FILE* code_file)
 {
-	assert (commands);
-	assert (index_cmd);
-	assert (file);
+	assert (ptr_cmd);
+	assert (code_file);
 
-	char str[MAX_LETTERS] = "";
-
-	while (fscanf (file, "%s", str) != EOF)
+	for (size_t index = 0; index < SIZE_HEADER; index++)
 	{
-		if (str[0] == '#') 
-		{
-			fgets (str, MAX_LETTERS, cmd_file); 
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "push") == 0)
-		{
-			commands[ip] = PUSH;
-			ip += 1;
-
-			fscanf  (file, "%d", commands + ip);
-			ip += 1;
-			
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "add") == 0)
-		{
-			commands[ip] = ADD;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "sub") == 0)
-		{
-			commands[ip] = SUB;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "mul") == 0)
-		{
-			commands[ip] = MUL;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "div") == 0)
-		{
-			commands[ip] = DIV;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "out") == 0)
-		{
-			commands[ip] = OUT;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "in") == 0)
-		{
-			commands[ip] = IN;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "sqrt") == 0)
-		{
-			commands[ip] = SQRT;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "sin") == 0)
-		{
-			commands[ip] = SIN;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "cos") == 0)
-		{
-			commands[ip] = COS;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "dump") == 0)
-		{
-			commands[ip] = DUMP;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "guide") == 0)
-		{
-			commands[ip] = GUIDE;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "hlt") == 0)
-		{
-			commands[ip] = HLT;
-			ip += 1;
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		printf ("SNT_ERROR:\n command: '%s' don't find\n", str);
-		fprintf (code_file, "BAD_FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-
-		fclose (code_file);
-		fclose (cmd_file);
 		
-		abort ();
+		fprintf (code_file, "%ld\n", *((*ptr_cmd).data + index));
 	}
 
-	fclose (code_file);
-
-	code_file = fopen ("../code.txt", "r+");
-
-	fprintf (code_file, "%ld", index_cmd);
-
-	size_t indent = 8 - ((index_cmd/10) + 1);
-
-	for (size_t index = 0; index < indent; index++)
+	for (size_t index = SIZE_HEADER; index < (*ptr_cmd).size; index++)
 	{
-		fprintf (code_file, " ");
+		fprintf (code_file, "%lx ", *((*ptr_cmd).data + index));
 	}
 
 	fprintf (code_file, "\n");
 
-	fclose (code_file);
+	return NICE;
+}
 
+#ifdef DEBUG
+	void static print_cmd (stk_t* ptr_cmd)
+	{
+		assert (ptr_cmd);
 
-}*/
+		for (size_t ip = 0; ip < (*ptr_cmd).size; ip++)
+		{
+			printf ("%3ld ", ip);
+		}
+		printf ("\n");
+
+		for (size_t ip = 0; ip < (*ptr_cmd).size; ip++)
+		{
+			printf ("%3lx ", (*ptr_cmd).data [ip]);
+		}
+		printf ("\n");
+
+		getchar ();
+
+		
+	}
+#endif

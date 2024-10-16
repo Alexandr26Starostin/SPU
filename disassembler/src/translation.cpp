@@ -77,12 +77,6 @@ void translation (FILE* code_file, FILE* cmd_file)
 				break;
 			}
 
-			case (COS):
-			{
-				fprintf (cmd_file, "sin\n");
-				break;
-			}
-
 			case (DUMP):
 			{
 				fprintf (cmd_file, "dump\n");

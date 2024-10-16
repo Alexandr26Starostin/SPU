@@ -16,9 +16,7 @@ int main (int argc, char** argv)
 
 	if (find_file (argc, argv, &cmd_file, &code_file) == BAD) {return BAD;}
 
-	translation (cmd_file, code_file);
-
-	fclose (cmd_file);
+	if (translation (cmd_file, code_file) == BAD) {return BAD;}
 
 	return NICE;
 }

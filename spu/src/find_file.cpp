@@ -4,6 +4,7 @@
 #include "../include/const.h"
 #include "../include/find_file.h"
 
+#define NAME_CODE_FILE "../code.txt"
 //-----------------------------------------------------------------------
 
 int find_file (int argc, char** argv, FILE** ptr_code_file)
@@ -13,7 +14,7 @@ int find_file (int argc, char** argv, FILE** ptr_code_file)
 
 	if (argc == 1)
 	{
-		*ptr_code_file = fopen ("../code.txt", "r");
+		*ptr_code_file = fopen (NAME_CODE_FILE, "r");
 	}
 
 	else
