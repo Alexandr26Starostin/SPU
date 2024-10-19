@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/const.h"
 #include "../include/find_file.h"
-#include "../include/translation.h"
+#include "../include/launch_asm.h"
+#include "../include/verifier.h"
 
 //-----------------------------------------------------------------------------
 
@@ -11,12 +11,14 @@ int main (int argc, char** argv)
 {
 	assert (argv);
 
-	FILE* cmd_file  = NULL; 
-	FILE* code_file = NULL;
+	FILE* asm_file = NULL; 
+	FILE* cmd_file = NULL;
 
-	if (find_file (argc, argv, &cmd_file, &code_file) == BAD) {return BAD;}
+	long status_find_file = find_file (argc, argv, &asm_file, &cmd_file);
+	if (status_find_file) {return (int) status_find_file;}
 
-	if (translation (cmd_file, code_file) == BAD) {return BAD;}
+	long status_launch_asm = launch_asm (asm_file, cmd_file);
+	if (status_launch_asm) {return (int) status_launch_asm;}
 
-	return NICE;
+	return (int) status_launch_asm;
 }

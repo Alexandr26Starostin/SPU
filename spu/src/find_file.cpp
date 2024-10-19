@@ -12,6 +12,8 @@ int find_file (int argc, char** argv, FILE** ptr_code_file)
 	assert (argv);	
 	assert (ptr_code_file);
 
+	//TODO const char *CODE_FILE_NAME = "./hui.txt";
+
 	if (argc == 1)
 	{
 		*ptr_code_file = fopen (NAME_CODE_FILE, "r");
@@ -27,7 +29,7 @@ int find_file (int argc, char** argv, FILE** ptr_code_file)
 		printf ("code_file == NULL\n");
 
 		printf ("Not find file\n"); 
-		printf ("Write in format: 1) exe  2) code  3) other \n");
+		printf ("Write in format:\n1) exe\n 2) code\n3) other\n");
 
 		fclose (*ptr_code_file);
 

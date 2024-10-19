@@ -1,0 +1,11 @@
+{
+	"files.associations": {
+		"sstream": "cpp",
+		"charconv": "cpp",
+		"chrono": "cpp",
+		"variant": "cpp",
+		"format": "cpp",
+		"*.tcc": "cpp",
+		"fstream": "cpp"
+	}
+}

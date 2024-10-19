@@ -14,11 +14,13 @@
 const size_t MAX_LETTERS     = 30;
 const size_t DEFAULT_LEN_STK = 32;
 const size_t COUNT_REGISTERS = 4;
+const size_t SIZE_RAM        = 32;
 
 void static read_code_file (command_t* commands, size_t size_commands, FILE* code_file);
 void static creat_spu      (spu_t* ptr_spu, FILE* code_file);
+void static destroy_spu    (spu_t* ptr_spu);
 
-#define NAME_GUIDE_FILE "../guide.txt"
+#define NAME_GUIDE_FILE "../guide.txt" // TODO do not use define
 
 #define POP_ONE_ELEMENT     \
 	element_t arg = 0;      \
@@ -29,10 +31,15 @@ void static creat_spu      (spu_t* ptr_spu, FILE* code_file);
 	stk_pop (&spu.stk, &a);         \
 	stk_pop (&spu.stk, &b);
 
-#define DEBUG_NOT
+#define PRINT_CMD
+#define PRINT_REG
 
-#ifdef DEBUG
-	void static print_cmd (command_t* commands, size_t size_commands, size_t position);
+#ifdef PRINT_CMD
+	void static print_cmd (spu_t* ptr_spu, size_t position);
+#endif
+
+#ifdef PRINT_REG 
+	void static print_reg (spu_t* ptr_spu);
 #endif
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -52,13 +59,20 @@ void run (FILE* code_file)
 
 	for (size_t ip = 0; ip < spu.size_commands; ip++)
 	{
-		#ifdef DEBUG
-			print_cmd (spu.commands, spu.size_commands, ip);
+		#ifdef PRINT_CMD
+			print_cmd (&spu, ip);
 			stk_dump (&spu.stk, __FILE__, __LINE__);
 			getchar ();
 		#endif
 
 		command_t cmd = spu.commands[ip];
+
+		// TODO (later)
+		//INSN(ADD, {
+		//	element_t var1 = pop();
+		//	element_t var2 = pop();
+		//	push(var1 + var2);
+		//})
 
 		switch (cmd & 0x0F)
 		{
@@ -220,11 +234,9 @@ void run (FILE* code_file)
 			
 			case HLT:
 			{
-				stk_dtor (&spu.stk);
-				fclose   (guide_file);
-				fclose   (code_file);
-				free     (spu.commands);
-				free     (spu.ptr_reg);
+				destroy_spu (&spu);
+				fclose      (guide_file);
+				fclose      (code_file);
 				break;
 			}
 
@@ -232,11 +244,9 @@ void run (FILE* code_file)
 			{
 				printf ("SNT_ERROR: '%lx'\n", cmd);
 
-				stk_dtor (&spu.stk);
-				fclose   (guide_file);
-				fclose   (code_file);
-				free     (spu.commands);
-				free     (spu.ptr_reg);
+				destroy_spu (&spu);
+				fclose      (guide_file);
+				fclose      (code_file);
 
 				abort ();
 				break;
@@ -270,21 +280,37 @@ void static creat_spu (spu_t* ptr_spu, FILE* code_file)
 	(*ptr_spu).commands = (command_t*) calloc ((*ptr_spu).size_commands, sizeof (command_t));
 	if ((*ptr_spu).commands == NULL) {fclose (code_file); abort ();}
 
-	(*ptr_spu).ptr_reg = (long*) calloc (COUNT_REGISTERS + 1, sizeof (long)); 
+	(*ptr_spu).ptr_reg = (long*) calloc (COUNT_REGISTERS + 1, sizeof (long));
+	if ((*ptr_spu).ptr_reg == NULL) {fclose (code_file); abort ();}
+
+	(*ptr_spu).ptr_ram = (long*) calloc (SIZE_RAM, sizeof (long));
+	if ((*ptr_spu).ptr_ram == NULL) {fclose (code_file); abort ();}
 }
 
-#ifdef DEBUG
-	void static print_cmd (command_t* commands, size_t size_commands, size_t position)
+void static destroy_spu (spu_t* ptr_spu)
+{
+	assert (ptr_spu);
+
+	stk_dtor (&((*ptr_spu).stk));
+	free     ((*ptr_spu).commands);
+	free     ((*ptr_spu).ptr_reg);
+	free     ((*ptr_spu).ptr_ram);
+}
+
+#ifdef PRINT_CMD
+	void static print_cmd (spu_t* ptr_spu, size_t position)
 	{
-		for (size_t ip = 0; ip < size_commands; ip++)
+		assert (ptr_spu);
+		
+		for (size_t ip = 0; ip < (*ptr_spu).size_commands; ip++)
 		{
 			printf ("%3ld ", ip);
 		}
 		printf ("\n");
 
-		for (size_t ip = 0; ip < size_commands; ip++)
+		for (size_t ip = 0; ip < (*ptr_spu).size_commands; ip++)
 		{
-			printf ("%3lx ", commands [ip]);
+			printf ("%3lx ", (*ptr_spu).commands [ip]);
 		}
 		printf ("\n");
 
@@ -293,5 +319,30 @@ void static creat_spu (spu_t* ptr_spu, FILE* code_file)
 			printf ("    ");
 		}
 		printf ("  !\n");
+
+		#ifdef PRINT_REG
+			print_reg (ptr_spu);
+		#endif
+	}
+#endif
+
+#ifdef PRINT_REG 
+	void static print_reg (spu_t* ptr_spu)
+	{
+		assert (ptr_spu);
+
+		for (char latter = 'A'; latter <= 'D'; latter++)
+		{
+			printf ("%cX ", latter);
+		}
+
+		printf ("\n");
+
+		for (size_t index_reg = 1; index_reg <= COUNT_REGISTERS; index_reg++)
+		{
+			printf ("%ld  ", (*ptr_spu).ptr_reg [index_reg]);
+		}
+
+		printf ("\n\n");
 	}
 #endif
