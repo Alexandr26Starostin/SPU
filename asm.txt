@@ -1,5 +1,8 @@
 push 0
 pop AX      #AX = 0
+
+ja NEXT:
+
 push AX
 push AX
 mul
@@ -13,6 +16,6 @@ pop AX      #AX++
 push AX
 push 10
 
-ja 4
+NEXT:
 
 hlt

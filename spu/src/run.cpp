@@ -262,10 +262,7 @@ void static read_code_file (command_t* commands, size_t size_commands, FILE* cod
 	assert (commands);
 	assert (code_file);
 
-	for (size_t ip = 0; ip < size_commands; ip++)
-	{
-		fscanf (code_file, "%lx", (long*) (commands + ip));
-	}
+	fread (commands, sizeof (command_t), size_commands, code_file);
 }
 
 void static creat_spu (spu_t* ptr_spu, FILE* code_file)

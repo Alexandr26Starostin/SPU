@@ -11,3 +11,24 @@
 
 SFML 
 SDL
+
+
+
+push 0
+pop AX      #AX = 0
+push AX
+push AX
+mul
+out         #AX * AX
+
+push AX
+push 1
+add
+pop AX      #AX++
+
+push AX
+push 10
+
+ja 4
+
+hlt

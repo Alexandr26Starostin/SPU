@@ -1,6 +1,8 @@
 #ifndef TRANSLATION_H
 #define TRANSLATION_H
 
+const size_t MAX_LEN_LABEL = 50; 
+
 struct fix_t
 {
 	size_t cmd_fix;
@@ -9,8 +11,8 @@ struct fix_t
 
 struct label_t 
 {
-	size_t ip_label;
-	char*  name_label;
+	long  ip_label;
+	char  name_label [MAX_LEN_LABEL] = "";
 };
 
 struct asm_t

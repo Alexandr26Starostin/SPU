@@ -2,6 +2,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+
 
 #include "../../commands.h"
 #include "../include/launch_asm.h"
@@ -11,18 +13,23 @@ const size_t MAX_LEN_STR = 50;
 const size_t SIZE_HEADER = 1;
 const size_t SIZE_CMD    = 128;
 const size_t SIZE_LABELS = 128;
-const size_t SIZE_FIXUP  = 128;
+const size_t SIZE_FIX_UP  = 128;
 
-static long read_file     (FILE*  asm_file, char** ptr_text);
-static long len_file      (FILE*  file);  
-static void close_files   (FILE*  asm_file, FILE* cmd_file);
-static void creat_asm     (asm_t* ptr_assm);
-static long verifier 	  (asm_t* ptr_assm, const char* file, int line);
-static void print_error   (long   danger_bit);
-static void detroy_asm    (asm_t* ptr_assm);
-static void translate_asm (asm_t* ptr_assm, char* text);
-static void print_asm     (asm_t* ptr_assm);
-static long asm_error     (asm_t* ptr_assm, const char* file, int line);
+static long   read_file       (FILE*  asm_file, char** ptr_text);
+static long   len_file        (FILE*  file);  
+static void   close_files     (FILE*  asm_file, FILE* cmd_file);
+static void   creat_asm       (asm_t* ptr_assm);
+static long   verifier 	      (asm_t* ptr_assm, const char* file, int line);
+static void   print_error     (long   danger_bit);
+static void   detroy_asm      (asm_t* ptr_assm);
+static long   translate_asm   (asm_t* ptr_assm, char* text);
+static void   print_asm       (asm_t* ptr_assm);
+static long   asm_error       (asm_t* ptr_assm, const char* file, int line);
+static void   write_in_file   (asm_t* ptr_assm, FILE* code_file);
+static void   write_in_labels (asm_t* ptr_assm, char* label);
+static long   find_label      (asm_t* ptr_assm, char* label);
+static void   write_in_fix_up (asm_t* ptr_assm);
+static void   read_fix_up     (asm_t* ptr_assm);
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -50,13 +57,29 @@ long launch_asm (FILE* asm_file, FILE* cmd_file)
 	{
 		close_files (asm_file, cmd_file);
 		detroy_asm  (&assm);
+		free (text);
 
 		return assm.error_in_asm;
 	}
 
-	translate_asm (&assm, text);
+	if (translate_asm (&assm, text))
+	{
+		close_files (asm_file, cmd_file);
+		detroy_asm  (&assm);
+		free (text);
+
+		return assm.error_in_asm;
+	}
+
+	read_fix_up (&assm);
+
+	print_asm (&assm);
+
+	write_in_file (&assm, cmd_file);
 
 	close_files (asm_file, cmd_file);
+	detroy_asm  (&assm);
+	free (text);
 
 	return NOT_ERROR;
 }
@@ -125,7 +148,7 @@ static void creat_asm (asm_t* ptr_assm)
 	ptr_assm -> labels_count = 0;
 
 	ptr_assm -> cmd    = (long*)    calloc (SIZE_CMD,    sizeof (long));
-	ptr_assm -> fix_up = (fix_t*)   calloc (SIZE_FIXUP,  sizeof (fix_t));
+	ptr_assm -> fix_up = (fix_t*)   calloc (SIZE_FIX_UP,  sizeof (fix_t));
 	ptr_assm -> labels = (label_t*) calloc (SIZE_LABELS, sizeof (label_t));
 }
 
@@ -144,8 +167,6 @@ static long asm_error (asm_t* ptr_assm, const char* file, int line)
 {
 	assert (ptr_assm);
 
-	ptr_assm -> error_in_asm = NOT_ERROR;
-
 	if (ptr_assm -> cmd == NULL)
 	{
 		ptr_assm -> error_in_asm |= CMD_NULL;
@@ -159,6 +180,21 @@ static long asm_error (asm_t* ptr_assm, const char* file, int line)
 	if (ptr_assm -> labels == NULL)
 	{
 		ptr_assm -> error_in_asm |= LABELS_NULL;
+	}
+
+	if (ptr_assm -> cmd_count >= SIZE_CMD)
+	{
+		ptr_assm -> error_in_asm |= SIXE_CMD_EXCEED;
+	}
+
+	if (ptr_assm -> labels_count >= SIZE_LABELS)
+	{
+		ptr_assm -> error_in_asm |= SIXE_LABELS_EXCEED;
+	}
+
+	if (ptr_assm -> fix_up_count >= SIZE_FIX_UP)
+	{
+		ptr_assm -> error_in_asm |= SIXE_FIX_UP_EXCEED;
 	}
 
 	long status = ptr_assm -> error_in_asm;
@@ -197,10 +233,18 @@ static void print_error (long danger_bit)
 {
 	switch (danger_bit)
 	{
-		case CMD_NULL:    {printf ("pointer on cmd    == NULL; code_error == %ld\n", danger_bit);     break;}
-		case FIX_UP_NULL: {printf ("pointer on fix_up == NULL; code_error == %ld\n", danger_bit);     break;}
-		case LABELS_NULL: {printf ("pointer on labels == NULL; code_error == %ld\n", danger_bit);     break;}
-		default:          {printf ("this error not find: %ld\n",                     danger_bit);     break;}
+		case CMD_NULL:           {printf ("pointer on cmd    == NULL;                                     code_error == %ld\n", danger_bit);     break;}
+		case FIX_UP_NULL:        {printf ("pointer on fix_up == NULL;                                     code_error == %ld\n", danger_bit);     break;}
+		case LABELS_NULL:        {printf ("pointer on labels == NULL;                                     code_error == %ld\n", danger_bit);     break;}
+		case SIXE_CMD_EXCEED:    {printf ("exceed the size of cmd;    change the max size of cmd;         code_error == %ld\n", danger_bit);     break;}
+		case SIXE_LABELS_EXCEED: {printf ("exceed the size of labels; change the max size of labels;      code_error == %ld\n", danger_bit);     break;}
+		case SIXE_FIX_UP_EXCEED: {printf ("exceed the size of fix_up; change the max size of fix_up;      code_error == %ld\n", danger_bit);     break;}
+		case PUSH_INCORRECT:     {printf ("push incorrect; use 'print_asm' to find, where error was born; code_error == %ld\n", danger_bit);     break;}
+		case POP_INCORRECT:      {printf ("pop  incorrect; use 'print_asm' to find, where error was born; code_error == %ld\n", danger_bit);     break;}
+		case COMMAND_INCORRECT:  {printf ("command incorrect; code_error == %ld\n",                                             danger_bit);     break;}
+		case REPEATED_LABEL:     {printf ("label defined in two places;                                   code_error == %ld\n", danger_bit);     break;}
+		case LABEL_INCORRECT:    {printf ("not find ':' in label;                                         code_error == %ld\n", danger_bit);     break;}
+		default:                 {printf ("this error not find: %ld\n",                                                         danger_bit);     break;}
 	}
 }
 
@@ -227,7 +271,7 @@ static void print_asm (asm_t* ptr_assm)
 
 	for (size_t index_cmd = 0; index_cmd < len_cmd; index_cmd++)
 	{
-		printf ("%3ld ", (ptr_assm -> cmd)[index_cmd]);
+		printf ("%3lx ", (ptr_assm -> cmd)[index_cmd]);
 	}
 	printf ("\n\n");
 
@@ -239,7 +283,7 @@ static void print_asm (asm_t* ptr_assm)
 	for (size_t index_labels = 0; index_labels < len_labels; index_labels++)
 	{
 		printf ("%3ld ", index_labels);
-		printf ("%3ld ", ((ptr_assm -> labels)[index_labels]).ip_label);
+		printf ("%3lx ", ((ptr_assm -> labels)[index_labels]).ip_label);
 		printf ("%s\n",  ((ptr_assm -> labels)[index_labels]).name_label);
 	}
 	printf ("\n\n");
@@ -265,27 +309,14 @@ static void print_asm (asm_t* ptr_assm)
 	{
 		printf ("%3ld ", ((ptr_assm -> fix_up)[index_fix_up]).label_fix);
 	}
-	printf ("----------------------------------------------------------------------------------------------------------------------------------------\n\n");
+	printf ("\n----------------------------------------------------------------------------------------------------------------------------------------\n\n");
 
 	getchar ();
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-static void translate_asm (asm_t* ptr_assm, char* text)
+static long translate_asm (asm_t* ptr_assm, char* text)
 {
 	assert (ptr_assm);
 	assert (text);
@@ -297,8 +328,16 @@ static void translate_asm (asm_t* ptr_assm, char* text)
 	while (sscanf (ptr_text, "%s%n", word_in_text, &index_text) != EOF)
 	{
 		printf ("word from sscanf: %s\n", word_in_text);
+
+		if (asm_error (ptr_assm, __FILE__, __LINE__))
+		{
+			return ptr_assm -> error_in_asm;
+		}
+
 		print_asm (ptr_assm);
 		ptr_text += index_text;
+
+		//-----------------------------------------------------------------------------------------------
 
 		if (word_in_text[0] == '#') 
 		{
@@ -306,314 +345,436 @@ static void translate_asm (asm_t* ptr_assm, char* text)
 			continue;
 		}
 
+		//-----------------------------------------------------------------------------------------------
+
 		if (strcmp (word_in_text, "push") == 0)
 		{		
+			sscanf (ptr_text, "%s%n", word_in_text, &index_text);
+			ptr_text += index_text;
 
-		}
-		
-	}
-}
+			long put_push = PUSH;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//translate_asm
-
-/*int  static read_file    (asm_t* ptr_assm, FILE* cmd_file);
-int  static write_file   (asm_t* ptr_assm, FILE* code_file);
-void static creat_asm    (asm_t* ptr_assm);
-void static destroy_asm  (asm_t* ptr_assm);
-// static check_labels (label_t* ptr_labels, size_t ip, char* str);
-
-
-#define COMPARE_STR_CMD(str, name_cmd, command)                                        \
-	if (strcmp (str, name_cmd) == 0)                                                   \
-	{                                                                                  \
-		stk_push (&(*ptr_assm).cmd, command);                                          \
-		ip += 1;                                                                       \
-		continue;                                                                      \
-	}              
-
-#define COMPARE_OM_JUMP(str, name_cmd, command)      \
-	if (strcmp (str, name_cmd) == 0)                 \
-	{                                                \
-		stk_push (&((*ptr_assm).cmd), command);      \
-                                                     \
-		int arg = 0;                                 \
-		fscanf  (cmd_file, "%x", &arg);              \
-                                                     \
-		stk_push (&((*ptr_assm).cmd), arg);          \
-		continue;                                    \
-	}
-
-#define DEBUG
-
-#ifdef DEBUG
-	void static print_cmd (stk_t* ptr_cmd);  
-#endif
-
-//-------------------------------------------------------------------------------------------------------------
-
-int translation (FILE* cmd_file, FILE* code_file) // TODO bad naming
-{
-	assert (cmd_file);
-	assert (code_file);
-
-	asm_t assm = {};
-
-	creat_asm (&assm);
-	
-	for (size_t index = 0; index < SIZE_HEADER; index++)
-	{
-		stk_push (&(assm.cmd), 0);
-	}
-	
-	// TODO macro for fclose, fclose and dtor
-
-	if (read_file (&assm, cmd_file) == BAD)
-	{
-		fprintf     (code_file, "BAD_FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-		fclose      (code_file);
-		fclose      (cmd_file);
-		destroy_asm (&assm);
-
-		return BAD; // TODO more error
-	}
-
-	*((assm.cmd).data + 0) = (long) (assm.cmd.size - SIZE_HEADER);
-
-		return BAD;
-	}
-
-	fclose (code_file);
-	if (write_file (&assm, code_file) == BAD)
-	{
-		fclose   (code_file);
-		fclose   (cmd_file);
-		destroy_asm (&assm);
-
-	fclose (cmd_file);
-	destroy_asm (&assm);
-
-	return NICE;  
-}
-//--------------------------------------------------------------------------------------------------------------
-
-int static read_file  (asm_t* ptr_assm, FILE* cmd_file)
-{
-	assert (ptr_assm);
-	assert (cmd_file);
-
-	// TODO it's better to read file like in Onegin
-
-	char str[MAX_LETTERS] = ""; // TODO what's str
-
-	size_t ip = 0;
-
-	while (fscanf (cmd_file, "%s", str) != EOF) // TODO check for strings
-	{
-		#ifdef DEBUG // TODO ifndef NDEBUG
-			print_cmd (&(*ptr_assm).cmd);
-		#endif
-
-		if (str[0] == '#') 
-		{
-			fgets (str, MAX_LETTERS, cmd_file); 
-			continue;
-		}
-
-		//----------------------------------------------------------------------------------------------
-
-		if (strcmp (str, "push") == 0)
-		{		
-			int arg = 0;
-			if (fscanf  (cmd_file, "%d", &arg) != 0) 
+			if ((word_in_text[0] == '[') && (strchr (word_in_text, ']') != NULL))
 			{
-				stk_push (&(*ptr_assm).cmd, PUSH | 0x10); // TODO magic number
-				stk_push (&(*ptr_assm).cmd, arg);
-				ip += 2;
-				continue;
+				put_push |= 0x40;
 			}
 
-			char reg = 0;
-			if (fscanf  (cmd_file, "%cX", &reg) != 0)
+			char* ptr_on_PLUS = strchr (word_in_text, '+');
+			char* ptr_on_X    = strchr (word_in_text, 'X');
+
+			if (ptr_on_PLUS != NULL)
 			{
-				stk_push (&(*ptr_assm).cmd, PUSH | 0x20); // TODO magic number
+				put_push |= (0x20 | 0x10);
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
+			}
 
-				for (int index_reg = 'A'; index_reg <= 'D'; index_reg++) // TODO MIN_REG and MAX_REG
+			if (ptr_on_X != NULL)
+			{
+				if (ptr_on_PLUS == NULL)
 				{
-					if (reg == index_reg)
+					put_push |= 0x20;
+					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
+				}
+
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = (long) *(ptr_on_X - 1) - 'A' + 1;
+			}
+
+			if (ptr_on_PLUS != NULL)
+			{
+				ptr_on_PLUS += 1;
+				//while (ptr_on_PLUS[0] ==' ') {ptr_on_PLUS += 1;}
+
+				long arg = 0;
+
+				if (sscanf (ptr_on_PLUS, "%ld", &arg) != 0)
+				{
+					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+				}
+			}
+
+			if ((put_push & (0x20 | 0x10)) == 0)
+			{
+				size_t index_latter = 0;
+				
+				while (word_in_text [index_latter] != '\0')
+				{
+					if (isdigit(word_in_text [index_latter]))
 					{
-						stk_push (&(*ptr_assm).cmd, index_reg - 'A' + 1);
+						put_push |= 0x10;
 
-						ip += 2;
+						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
 
+						long arg = 0;
+
+						sscanf (word_in_text + index_latter, "%ld", &arg);
+
+						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+						
 						break;
 					}
+
+					index_latter++;
 				}
-				continue;
 			}
-			
-			printf ("ERROR IN SNT PUSH\n");
-			abort ();
-		}
 
-		if (strcmp (str, "pop") == 0)
-		{
-			stk_push (&(*ptr_assm).cmd, POP | 0x20);
-
-			char reg[MAX_LETTERS] = "";
-			fscanf (cmd_file, "%s", reg);
-
-			for (int index_reg = 'A'; index_reg <= 'D'; index_reg++)
+			if ((put_push & (0x20 | 0x10)) == 0)
 			{
-				if (reg[0] == index_reg)
-				{
-					stk_push (&(*ptr_assm).cmd, index_reg - 'A' + 1);
-
-					ip += 2;
-					break;
-				}
+				ptr_assm -> error_in_asm |= PUSH_INCORRECT;
 			}
+
 			continue;
 		}
 
-		//-----------------------------------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------------------------
 
-		COMPARE_OM_JUMP(str, "jmp", JMP);
-		COMPARE_OM_JUMP(str, "ja",  JA);
-		COMPARE_OM_JUMP(str, "jb",  JB);
+		if (strcmp (word_in_text, "pop") == 0)
+		{
+			sscanf (ptr_text, "%s%n", word_in_text, &index_text);
+			ptr_text += index_text;
 
-		//------------------------------------------------------------------------------------------------------
+			long put_pop = POP;
 
-		COMPARE_STR_CMD(str, "out",   OUT);
-		COMPARE_STR_CMD(str, "add",   ADD);
-		COMPARE_STR_CMD(str, "sub",   SUB);
-		COMPARE_STR_CMD(str, "mul",   MUL);
-		COMPARE_STR_CMD(str, "div",   DIV);
-		COMPARE_STR_CMD(str, "in",    IN);
-		COMPARE_STR_CMD(str, "sqrt",  SQRT);
-		COMPARE_STR_CMD(str, "sin",   SIN);
-		COMPARE_STR_CMD(str, "dump",  DUMP);
-		COMPARE_STR_CMD(str, "guide", GUIDE);
-		COMPARE_STR_CMD(str, "hlt",   HLT);
+			if ((word_in_text[0] == '[') && (strchr (word_in_text, ']') != NULL))
+			{
+				put_pop |= 0x40;
+			}
 
-		// if (strchr (str, ':') != EOF)
-		// {
-		// 	check_labels ((*ptr_assm).labels, ip, str);
-		// }
+			char* ptr_on_PLUS = strchr (word_in_text, '+');
+			char* ptr_on_X    = strchr (word_in_text, 'X');
 
-		printf ("SNT_ERROR:\n command: '%s' don't find\n", str);
+			if (ptr_on_PLUS != NULL && ((put_pop & 0x40) == 0))
+			{
+				ptr_assm -> error_in_asm |= POP_INCORRECT;
+				continue;
+			}
 
-		return BAD;
+			if (ptr_on_PLUS != NULL)
+			{
+				put_pop |= (0x20 | 0x10);
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
+			}
+
+			if (ptr_on_X != NULL)
+			{
+				if (ptr_on_PLUS == NULL)
+				{
+					put_pop |= 0x20;
+					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
+				}
+
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = (long) *(ptr_on_X - 1) - 'A' + 1;
+			}
+
+			if (ptr_on_PLUS != NULL)
+			{
+				ptr_on_PLUS += 1;
+				//while (ptr_on_PLUS[0] ==' ') {ptr_on_PLUS += 1;}
+
+				long arg = 0;
+
+				if (sscanf (ptr_on_PLUS, "%ld", &arg) != 0)
+				{
+					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+				}
+			}
+
+			if ((put_pop & (0x20 | 0x10)) == 0 && (put_pop & (0x40)) != 0)
+			{
+				size_t index_latter = 0;
+				
+				while (word_in_text [index_latter] != '\0')
+				{
+					if (isdigit(word_in_text [index_latter]))
+					{
+						put_pop |= 0x10;
+
+						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
+
+						long arg = 0;
+
+						sscanf (word_in_text + index_latter, "%ld", &arg);
+
+						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+						
+						break;
+					}
+
+					index_latter++;
+				}
+			}
+
+			if ((put_pop & (0x20 | 0x10)) == 0)
+			{
+				ptr_assm -> error_in_asm |= POP_INCORRECT;
+			}
+
+			continue;
+		}
+
+		//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+		if (strcmp (word_in_text, "add") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = ADD;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "out") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = OUT;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "sub") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = SUB;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "mul") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = MUL;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "div") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = DIV;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "in") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = IN;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "sqrt") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = SQRT;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "sin") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = SIN;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "guide") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = GUIDE;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "dump") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = DUMP;                                                                                                              
+			continue;                                                                      
+		}  
+
+		if (strcmp (word_in_text, "hlt") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = HLT;                                                                                                              
+			continue;                                                                      
+		}  
+
+		//----------------------------------------------------------------------------------------------------------------------------------
+		
+		if (strcmp (word_in_text, "jmp") == 0)                 
+		{                                                
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = JMP;      
+
+			sscanf (ptr_text, "%s%n", word_in_text, &index_text);
+
+			ptr_text += index_text;
+
+			if (strchr(word_in_text, ':') != NULL)
+			{
+				long ip_label = find_label (ptr_assm, word_in_text);
+				(ptr_assm -> cmd) [ptr_assm -> cmd_count] = ip_label;
+				if (ip_label < 0)
+				{
+					write_in_fix_up (ptr_assm);
+				}
+
+				(ptr_assm -> cmd_count) += 1;
+			}
+
+			else 
+			{
+				ptr_assm -> error_in_asm |= LABEL_INCORRECT;
+			}
+
+			continue;                                   
+		}
+
+		if (strcmp (word_in_text, "ja") == 0)                 
+		{                                                
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = JA;      
+
+			sscanf (ptr_text, "%s%n", word_in_text, &index_text);
+
+			ptr_text += index_text;
+
+			if (strchr(word_in_text, ':') != NULL)
+			{
+				long label = find_label (ptr_assm, word_in_text);
+				(ptr_assm -> cmd) [ptr_assm -> cmd_count] = label;
+				if (label < 0)
+				{
+					write_in_fix_up (ptr_assm);
+				}
+
+				(ptr_assm -> cmd_count) += 1;
+			}
+
+			else 
+			{
+				ptr_assm -> error_in_asm |= LABEL_INCORRECT;
+			}
+
+			continue;                                   
+		}
+
+		if (strcmp (word_in_text, "jb") == 0)                 
+		{                                                
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = JB;      
+
+			sscanf (ptr_text, "%s%n", word_in_text, &index_text);
+
+			ptr_text += index_text;
+
+			if (strchr(word_in_text, ':') != NULL)
+			{
+				long label = find_label (ptr_assm, word_in_text);
+				(ptr_assm -> cmd) [ptr_assm -> cmd_count] = label;
+				if (label < 0)
+				{
+					write_in_fix_up (ptr_assm);
+				}
+
+				(ptr_assm -> cmd_count) += 1;
+			}
+
+			else 
+			{
+				ptr_assm -> error_in_asm |= LABEL_INCORRECT;
+			}
+
+			continue;                                   
+		}
+
+		if (strchr(word_in_text, ':') != NULL)
+		{
+			write_in_labels (ptr_assm, word_in_text);
+			continue;
+		}
+
+		printf ("SNT_ERROR:\n command: '%s' don't find\n", word_in_text);
+
+		ptr_assm -> error_in_asm |= COMMAND_INCORRECT;
 	}
 
-	#ifdef DEBUG
-		print_cmd (&(*ptr_assm).cmd);
-	#endif
+	if (asm_error (ptr_assm, __FILE__, __LINE__))
+	{
+		return ptr_assm -> error_in_asm;
+	}
 
-	return NICE;
+	print_asm (ptr_assm);
+	
+
+	return ptr_assm -> error_in_asm;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-int static write_file (asm_t* ptr_assm, FILE* code_file)
+static void write_in_file (asm_t* ptr_assm, FILE* code_file)
 {
 	assert (ptr_assm);
 	assert (code_file);
 
-	for (size_t index = 0; index < SIZE_HEADER; index++)
-	{
-		
-		fprintf (code_file, "%ld\n", *((*ptr_assm).cmd.data + index));
-	}
+	long hdr[SIZE_HEADER] = {};
+	hdr[0] = ptr_assm -> cmd_count;
 
-	for (size_t index = SIZE_HEADER; index < (*ptr_assm).cmd.size; index++)
-	{
-		fprintf (code_file, "%lx ", *((*ptr_assm).cmd.data + index));
-	}
-
-	fprintf (code_file, "\n");
-
-	return NICE;
+	fwrite  (hdr,             sizeof (long), SIZE_HEADER,           code_file);
+	fwrite  (ptr_assm -> cmd, sizeof (long), ptr_assm -> cmd_count, code_file);
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
 
+//--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+static void write_in_labels (asm_t* ptr_assm, char* label)
+{
+	assert (ptr_assm);
+	assert (label);
 
-void static destroy_asm (asm_t* ptr_assm)
+	size_t index_label = 0;
+
+	for (index_label = 0; index_label < (ptr_assm -> labels_count); index_label++)
+	{
+		if (strcmp (label, ((ptr_assm -> labels) [index_label]).name_label) == 0)
+		{
+			if (((ptr_assm -> labels) [index_label]).ip_label != -1)
+			{
+				ptr_assm -> error_in_asm |= REPEATED_LABEL;
+			}
+
+			break;
+		}
+	}
+
+	((ptr_assm -> labels) [index_label]).ip_label   = ptr_assm -> cmd_count;
+	strcpy(((ptr_assm -> labels) [index_label]).name_label, label);
+
+	if (index_label == (ptr_assm -> labels_count))
+	{
+		(ptr_assm -> labels_count) += 1;
+	}
+}
+
+static long find_label (asm_t* ptr_assm, char* label)
+{
+	assert (ptr_assm);
+	assert (label);
+
+	for (size_t index_label = 0; index_label < ptr_assm -> labels_count; index_label++)
+	{
+		if (strcmp (label, ((ptr_assm -> labels) [index_label]).name_label) == 0)
+		{
+			return ((ptr_assm -> labels) [index_label]).ip_label;
+		}
+	}
+
+	((ptr_assm -> labels) [ptr_assm -> labels_count]).ip_label = -1;
+	strcpy(((ptr_assm -> labels) [ptr_assm -> labels_count]).name_label, label);
+
+	(ptr_assm -> labels_count) += 1;
+
+	return -1;
+}
+
+static void write_in_fix_up (asm_t* ptr_assm)
 {
 	assert (ptr_assm);
 
-	stk_dtor (&((*ptr_assm).cmd));
-	free     ((*ptr_assm).labels);
-	free     ((*ptr_assm).fix_up);
+	((ptr_assm -> fix_up) [ptr_assm -> fix_up_count]).cmd_fix   = ptr_assm -> cmd_count;
+	((ptr_assm -> fix_up) [ptr_assm -> fix_up_count]).label_fix = (ptr_assm -> labels_count) - 1;
+
+	ptr_assm -> fix_up_count += 1;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------------
+static void read_fix_up (asm_t* ptr_assm)
+{
+	assert (ptr_assm);
 
-#ifdef DEBUG
-	void static print_cmd (stk_t* ptr_cmd)
+	for (size_t index_fix_up = 0; index_fix_up < ptr_assm -> fix_up_count; index_fix_up++)
 	{
-		assert (ptr_cmd);
+		size_t index_true_label = ((ptr_assm -> fix_up) [index_fix_up]).label_fix;
+		size_t true_ip_label = ((ptr_assm -> labels) [index_true_label]).ip_label;
 
-		for (size_t ip = 0; ip < (*ptr_cmd).size; ip++)
-		{
-			printf ("%3ld ", ip);
-		}
-		printf ("\n");
+		size_t index_incorrect_cmd = ((ptr_assm -> fix_up) [index_fix_up]).cmd_fix;
 
-		for (size_t ip = 0; ip < (*ptr_cmd).size; ip++)
-		{
-			printf ("%3lx ", (*ptr_cmd).data [ip]);
-		}
-		printf ("\n");
-
-		getchar ();		
+		(ptr_assm -> cmd) [index_incorrect_cmd] = true_ip_label;
 	}
-#endif
-
-// void static check_labels (label_t* ptr_labels, size_t ip, char* str)
-// {
-// 	printf (":)");
-// }
-*/
+}
