@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/const.h"
 #include "../include/find_file.h"
-#include "../include/run.h"
+#include "../include/launch_spu.h"
 
 //---------------------------------------------------------------------------
 
@@ -11,10 +10,13 @@ int main (int argc, char** argv)
 {
 	assert (argv);
 
-	FILE* code_file = NULL;
-	if (find_file (argc, argv, &code_file) == BAD) {return BAD;}
+	FILE* cmd_file = NULL;
 
-	run (code_file);
+	long status_find_file = find_file (argc, argv, &cmd_file);
+	if (status_find_file) {return status_find_file;}
+
+	long status_launch_spu = launch_spu (cmd_file);
+	if (status_launch_spu) {return status_launch_spu;}
 
 	return NICE;
 }

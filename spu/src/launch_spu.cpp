@@ -9,18 +9,24 @@
 #include "../../stack/include/stk_error.h"
 
 #include "../../commands.h"
-#include "../include/run.h"
+#include "../include/launch_spu.h"
 
 const size_t MAX_LETTERS     = 30;
 const size_t DEFAULT_LEN_STK = 32;
 const size_t COUNT_REGISTERS = 4;
 const size_t SIZE_RAM        = 32;
 
+
+
+
+
+
+/*
 void static read_code_file (command_t* commands, size_t size_commands, FILE* code_file);
 void static creat_spu      (spu_t* ptr_spu, FILE* code_file);
 void static destroy_spu    (spu_t* ptr_spu);
 
-#define NAME_GUIDE_FILE "../guide.txt" // TODO do not use define
+const char* NAME_GUIDE_FILE = "../guide.txt"
 
 #define POP_ONE_ELEMENT     \
 	element_t arg = 0;      \
@@ -44,15 +50,19 @@ void static destroy_spu    (spu_t* ptr_spu);
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void run (FILE* code_file)
+void run_spu (FILE* code_file)
 {
 	assert (code_file);
 
 	spu_t spu = {};
 
 	creat_spu (&spu, code_file);
+
+	printf ("6\n");
 	
 	read_code_file (spu.commands, spu.size_commands, code_file);
+
+	printf ("7\n");
 
 	FILE* guide_file = fopen (NAME_GUIDE_FILE, "r");
 	if (guide_file == NULL) {printf ("Can't open guide.txt\n"); abort ();}
@@ -343,3 +353,5 @@ void static destroy_spu (spu_t* ptr_spu)
 		printf ("\n\n");
 	}
 #endif
+
+*/

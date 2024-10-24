@@ -3,7 +3,6 @@
 
 #include "../include/find_file.h"
 #include "../include/launch_asm.h"
-#include "../include/verifier.h"
 
 //-----------------------------------------------------------------------------
 

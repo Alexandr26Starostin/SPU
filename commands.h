@@ -18,7 +18,10 @@ enum command_t : long
 	POP   = 0x0C,
 	JMP   = 0x0D,
 	JA    = 0x0E,
-	JB    = 0x0F
+	JB    = 0x0F,
+	CALL  = 0x10,
+	RET   = 0x11,
+	DRAW  = 0x12
 };
 
 #endif

@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 #include "../include/find_file.h"
 
 //Default names of files:
 //"../asm.txt" "../cmd.txt"
+
+//TODO -o
 
 result_find_file find_file (int argc, char** argv, FILE** ptr_asm_file, FILE** ptr_cmd_file)
 {
@@ -14,8 +17,8 @@ result_find_file find_file (int argc, char** argv, FILE** ptr_asm_file, FILE** p
 
 	if (argc >= 3)
 	{
-		*ptr_asm_file = fopen (argv[1], "r");
-		*ptr_cmd_file = fopen (argv[2], "w");
+		*ptr_asm_file = fopen (argv[1], "rb");
+		*ptr_cmd_file = fopen (argv[2], "wb");
 	}
 
 	else 

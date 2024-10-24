@@ -1,40 +1,39 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/const.h"
 #include "../include/find_file.h"
 
-#define NAME_CODE_FILE "../code.txt"
 //-----------------------------------------------------------------------
 
-int find_file (int argc, char** argv, FILE** ptr_code_file)
+result_find_file find_file (int argc, char** argv, FILE** ptr_cmd_file)
 {
 	assert (argv);	
-	assert (ptr_code_file);
+	assert (ptr_cmd_file);
 
-	//TODO const char *CODE_FILE_NAME = "./hui.txt";
-
-	if (argc == 1)
-	{
-		*ptr_code_file = fopen (NAME_CODE_FILE, "r");
+	if (argc >= 2)
+	{	
+		*ptr_cmd_file = fopen (argv[1], "r");
 	}
 
-	else
+	else 
 	{
-		*ptr_code_file = fopen (argv[1], "r");
+		printf ("spu wants to eat one files)) Don't be greedy\n");
+		return FEW_FILES;
 	}
 
-	if (*ptr_code_file == NULL)
+	if (*ptr_cmd_file == NULL)
 	{
-		printf ("code_file == NULL\n");
+		printf ("cmd_file == NULL\n");
 
 		printf ("Not find file\n"); 
-		printf ("Write in format:\n1) exe\n 2) code\n3) other\n");
+		printf ("Write in format: 1) exe  2) commands  3) other \n");
 
-		fclose (*ptr_code_file);
+		fclose (*ptr_cmd_file);
 
-		return BAD;
+		return NOT_FIND_FILE;
 	}
 
-	return NICE;
+	printf ("4\n");
+
+	return YES_FIND_FILE;
 }
