@@ -169,7 +169,7 @@ static void creat_asm (asm_t* ptr_assm)
 	ptr_assm -> fix_up_count = 0;
 	ptr_assm -> labels_count = 0;
 
-	ptr_assm -> cmd    = (int*)    calloc (SIZE_CMD,    sizeof  (int));
+	ptr_assm -> cmd    = (int*)    calloc  (SIZE_CMD,    sizeof  (int));
 	ptr_assm -> fix_up = (fix_t*)   calloc (SIZE_FIX_UP, sizeof (fix_t));
 	ptr_assm -> labels = (label_t*) calloc (SIZE_LABELS, sizeof (label_t));
 }

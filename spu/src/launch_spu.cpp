@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -8,350 +7,137 @@
 #include "../../stack/include/operations_with_stack.h"
 #include "../../stack/include/stk_error.h"
 
-#include "../../commands.h"
+#include "../include/spu_error.h"
+#include "../include/spu_run.h"
 #include "../include/launch_spu.h"
 
-const size_t MAX_LETTERS     = 30;
-const size_t DEFAULT_LEN_STK = 32;
-const size_t COUNT_REGISTERS = 4;
-const size_t SIZE_RAM        = 32;
+static error_t check_header  (FILE* cmd_file, int* ptr_len_cmd);
+static void    print_header  (header_t* hdr);
+static void    creat_spu     (spu_t* ptr_spu, int len_cmd);
+static void    destroy_spu    (spu_t* ptr_spu);
+static void    read_cmd_file (spu_t* ptr_spu, FILE* cmd_file);
 
+//---------------------------------------------------------------------------------------------
 
-
-
-
-
-/*
-void static read_code_file (command_t* commands, size_t size_commands, FILE* code_file);
-void static creat_spu      (spu_t* ptr_spu, FILE* code_file);
-void static destroy_spu    (spu_t* ptr_spu);
-
-const char* NAME_GUIDE_FILE = "../guide.txt"
-
-#define POP_ONE_ELEMENT     \
-	element_t arg = 0;      \
-	stk_pop (&spu.stk, &arg);
-
-#define POP_TWO_ELEMENT             \
-	element_t a = 0, b = 0;         \
-	stk_pop (&spu.stk, &a);         \
-	stk_pop (&spu.stk, &b);
-
-#define PRINT_CMD
-#define PRINT_REG
-
-#ifdef PRINT_CMD
-	void static print_cmd (spu_t* ptr_spu, size_t position);
-#endif
-
-#ifdef PRINT_REG 
-	void static print_reg (spu_t* ptr_spu);
-#endif
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void run_spu (FILE* code_file)
+long launch_spu (FILE* cmd_file)
 {
-	assert (code_file);
+	assert (cmd_file);
+
+	int len_cmd = 0;
+
+	if (check_header (cmd_file, &len_cmd)) {fclose (cmd_file); return (long) ERROR_IN_HEADER;}
 
 	spu_t spu = {};
+	creat_spu (&spu, len_cmd);
 
-	creat_spu (&spu, code_file);
-
-	printf ("6\n");
-	
-	read_code_file (spu.commands, spu.size_commands, code_file);
-
-	printf ("7\n");
-
-	FILE* guide_file = fopen (NAME_GUIDE_FILE, "r");
-	if (guide_file == NULL) {printf ("Can't open guide.txt\n"); abort ();}
-
-	for (size_t ip = 0; ip < spu.size_commands; ip++)
+	if (spu_error (&spu, __FILE__, __LINE__))
 	{
-		#ifdef PRINT_CMD
-			print_cmd (&spu, ip);
-			stk_dump (&spu.stk, __FILE__, __LINE__);
-			getchar ();
-		#endif
+		fclose     (cmd_file);
+		destroy_spu (&spu);
 
-		command_t cmd = spu.commands[ip];
-
-		// TODO (later)
-		//INSN(ADD, {
-		//	element_t var1 = pop();
-		//	element_t var2 = pop();
-		//	push(var1 + var2);
-		//})
-
-		switch (cmd & 0x0F)
-		{
-			case GUIDE:
-			{
-				char str[MAX_LETTERS] = "";
-				while (fgets (str, MAX_LETTERS, guide_file) != NULL) {printf ("%s", str);}
-
-				printf ("\n");
-				break;
-			}
-
-			case PUSH:
-			{
-				if ((cmd & 0xF0) == 0x10)
-				{
-					ip        += 1;                              //TODO make new func
-					element_t arg = spu.commands[ip];
-
-					stk_push (&spu.stk, arg);
-				}
-
-				if ((cmd & 0xF0) == 0x20)
-				{
-					ip        += 1;
-					element_t reg = spu.commands[ip];
-
-					stk_push (&spu.stk, *(spu.ptr_reg + reg));
-				}
-
-				if ((cmd & 0xF0) == 0x30)
-				{
-					ip        += 1;
-					element_t reg = spu.commands[ip];
-
-					ip        += 1;
-					element_t arg = spu.commands[ip];
-
-					stk_push (&spu.stk, *(spu.ptr_reg + reg) + arg);
-				}
-
-				break;
-			}
-			
-			case ADD:
-			{
-				POP_TWO_ELEMENT;
-
-				stk_push (&spu.stk, b + a);
-				break;
-			}
-			
-			case SUB:
-			{
-				POP_TWO_ELEMENT;
-				stk_push (&spu.stk, b - a);
-				break;
-			}
-			
-			case MUL:
-			{
-				POP_TWO_ELEMENT;
-				stk_push (&spu.stk, b * a);
-				break;
-			}
-			
-			case DIV:
-			{
-				POP_TWO_ELEMENT;
-				stk_push (&spu.stk, b / a);
-				break;
-			}
-
-			case POP:
-			{
-				if ((cmd & 0xF0) == 0x20)
-				{
-					POP_ONE_ELEMENT;
-					ip                    += 1;
-					spu.ptr_reg[spu.commands[ip]] = arg;
-				}
-
-				break;
-			}
-			
-			case OUT:
-			{
-				POP_ONE_ELEMENT;
-				printf ("%ld\n", arg);
-				getchar ();
-				break;
-			}
-
-			case IN:
-			{
-				element_t arg = 0;
-				scanf ("%lx", &arg);
-				stk_push (&spu.stk, arg);
-				break;
-			}
-			
-			case SQRT:
-			{
-				POP_ONE_ELEMENT;
-				stk_push (&spu.stk, (int) sqrt ((double) arg));
-				break;
-			}
-			
-			case SIN:
-			{
-				POP_ONE_ELEMENT;
-				stk_push (&spu.stk, (int) sin ((double) arg));
-				break;
-			}
-			
-			case DUMP:
-			{
-				stk_dump (&spu.stk, __FILE__, __LINE__);
-				break;
-			}
-
-			case JMP:
-			{
-				ip = spu.commands[ip + 1] - 1;
-				break;
-			}
-
-			case JA:
-			{
-				POP_TWO_ELEMENT;
-
-				if (a > b)
-				{
-					ip = spu.commands[ip + 1] - 1;
-				}
-				else 
-				{
-					ip += 1;
-				}
-
-				break;
-			}
-
-			case JB:
-			{
-				POP_TWO_ELEMENT;
-
-				if (a < b)
-				{
-					ip = (size_t) spu.commands[ip + 1] - 1;
-				}
-				else 
-				{
-					ip += 1;
-				}
-
-				break;
-			}
-			
-			case HLT:
-			{
-				destroy_spu (&spu);
-				fclose      (guide_file);
-				fclose      (code_file);
-				break;
-			}
-
-			default:
-			{
-				printf ("SNT_ERROR: '%lx'\n", cmd);
-
-				destroy_spu (&spu);
-				fclose      (guide_file);
-				fclose      (code_file);
-
-				abort ();
-				break;
-			}
-		}
+		return spu.error_in_spu;
 	}
+
+	read_cmd_file (&spu, cmd_file);
+
+	if (run_spu (&spu))
+	{
+		fclose     (cmd_file);
+		destroy_spu (&spu);
+
+		return spu.error_in_spu;
+	}
+
+	destroy_spu (&spu);
+	fclose   (cmd_file);
+
+	return spu.error_in_spu;
 }
 
-//------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------
 
-void static read_code_file (command_t* commands, size_t size_commands, FILE* code_file)
+static error_t check_header (FILE* cmd_file, int* ptr_len_cmd)
 {
-	assert (commands);
-	assert (code_file);
+	assert (cmd_file);
 
-	fread (commands, sizeof (command_t), size_commands, code_file);
+	error_t status_header = NOT_ERROR_IN_SPU;
+
+	header_t hdr [SIZE_HEADER] = {};
+
+	fread (hdr, sizeof (header_t), SIZE_HEADER, cmd_file);
+
+	print_header (hdr);
+
+	if (hdr[0] != SIGNATURE)
+	{
+		printf ("error in signature:\n");
+		printf ("signature in spu  = %d\n", SIGNATURE);
+		printf ("signature in file = %d\n\n", hdr[0]);
+		status_header = ERROR_IN_HEADER;
+	}
+
+	if (hdr[1] != VERSION)
+	{
+		printf ("error in version:\n");
+		printf ("version in spu  = %d\n", VERSION);
+		printf ("version in file = %d\n\n", hdr[1]);
+		status_header = ERROR_IN_HEADER;
+	}
+
+	*ptr_len_cmd = hdr[2];
+
+	return status_header;
 }
 
-void static creat_spu (spu_t* ptr_spu, FILE* code_file)
+static void print_header (header_t* hdr)
 {
-	assert (ptr_spu);
-	assert (code_file);
+	assert (hdr);
 
-	if (stk_ctor (&((*ptr_spu).stk), DEFAULT_LEN_STK) != 0) {abort ();}
+	printf ("hdr:\n");
 
-	fscanf (code_file, "%ld", &((*ptr_spu).size_commands));
+	for (size_t index_hdr = 0; index_hdr < SIZE_HEADER; index_hdr++)
+	{
+		printf ("%6ld ", index_hdr);
+	}
 
-	(*ptr_spu).commands = (command_t*) calloc ((*ptr_spu).size_commands, sizeof (command_t));
-	if ((*ptr_spu).commands == NULL) {fclose (code_file); abort ();}
+	printf ("\n");
 
-	(*ptr_spu).ptr_reg = (long*) calloc (COUNT_REGISTERS + 1, sizeof (long));
-	if ((*ptr_spu).ptr_reg == NULL) {fclose (code_file); abort ();}
+	for (size_t index_hdr = 0; index_hdr < SIZE_HEADER; index_hdr++)
+	{
+		printf ("%6x ", hdr[index_hdr]);
+	}
 
-	(*ptr_spu).ptr_ram = (long*) calloc (SIZE_RAM, sizeof (long));
-	if ((*ptr_spu).ptr_ram == NULL) {fclose (code_file); abort ();}
+	printf("\n--------------------------------------------------------------------------------------------------------------\n\n");
 }
 
-void static destroy_spu (spu_t* ptr_spu)
+static void creat_spu (spu_t* ptr_spu, int len_cmd)
 {
 	assert (ptr_spu);
 
-	stk_dtor (&((*ptr_spu).stk));
-	free     ((*ptr_spu).commands);
-	free     ((*ptr_spu).ptr_reg);
-	free     ((*ptr_spu).ptr_ram);
+	ptr_spu -> size_cmd = (size_t) len_cmd;
+
+	ptr_spu -> cmd = (cmd_t*) calloc (len_cmd,  sizeof (cmd_t));
+	ptr_spu -> reg = (reg_t*) calloc (SIZE_REG, sizeof (reg_t));
+	ptr_spu -> ram = (ram_t*) calloc (SIZE_RAM, sizeof (ram_t));
+
+	stk_ctor (&(ptr_spu -> stk), DEFAULT_LEN_STK);
 }
 
-#ifdef PRINT_CMD
-	void static print_cmd (spu_t* ptr_spu, size_t position)
-	{
-		assert (ptr_spu);
-		
-		for (size_t ip = 0; ip < (*ptr_spu).size_commands; ip++)
-		{
-			printf ("%3ld ", ip);
-		}
-		printf ("\n");
+static void destroy_spu (spu_t* ptr_spu)
+{
+	assert (ptr_spu);
 
-		for (size_t ip = 0; ip < (*ptr_spu).size_commands; ip++)
-		{
-			printf ("%3lx ", (*ptr_spu).commands [ip]);
-		}
-		printf ("\n");
+	free (ptr_spu -> cmd);
+	free (ptr_spu -> reg);
+	free (ptr_spu -> ram);
 
-		for (size_t ip = 0; ip < position; ip++)
-		{
-			printf ("    ");
-		}
-		printf ("  !\n");
+	stk_dtor (&(ptr_spu -> stk));
+}
 
-		#ifdef PRINT_REG
-			print_reg (ptr_spu);
-		#endif
-	}
-#endif
+static void read_cmd_file (spu_t* ptr_spu, FILE* cmd_file)
+{
+	assert (ptr_spu);
+	assert (cmd_file);
 
-#ifdef PRINT_REG 
-	void static print_reg (spu_t* ptr_spu)
-	{
-		assert (ptr_spu);
-
-		for (char latter = 'A'; latter <= 'D'; latter++)
-		{
-			printf ("%cX ", latter);
-		}
-
-		printf ("\n");
-
-		for (size_t index_reg = 1; index_reg <= COUNT_REGISTERS; index_reg++)
-		{
-			printf ("%ld  ", (*ptr_spu).ptr_reg [index_reg]);
-		}
-
-		printf ("\n\n");
-	}
-#endif
-
-*/
+	fread (ptr_spu -> cmd, sizeof (cmd_t), ptr_spu -> size_cmd, cmd_file);
+}

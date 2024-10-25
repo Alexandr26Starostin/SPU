@@ -13,6 +13,10 @@ const int SIZE_HEADER   = 3;
 const int SIGNATURE     = 0xC0FFEE;
 const int VERSION       = 1;  
 
+const long   IMM_MASK    = 0x20;
+const long   REG_MASK    = 0x40;
+const long   MEM_MASK    = 0x80;
+
 enum error_t
 {
 	ERROR_IN_HEADER        = -5,

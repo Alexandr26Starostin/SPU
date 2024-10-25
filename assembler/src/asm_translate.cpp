@@ -11,9 +11,7 @@
 #include "../include/asm_translate.h"
 #include "../include/asm_labels.h"
 
-const long   IMM_MASK    = 0x20;
-const long   REG_MASK    = 0x40;
-const long   MEM_MASK    = 0x80;
+const int POISON = -666666;
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -53,7 +51,10 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			sscanf (ptr_text, "%s%n", word_in_text, &index_text);
 			ptr_text += index_text;
 
-			int put_push = PUSH;
+			int put_push  = PUSH;
+			int index_reg = 0;
+			int arg       = POISON;
+
 
 			if ((word_in_text[0] == '[') && (strchr (word_in_text, ']') != NULL))
 			{
@@ -66,7 +67,6 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			if (ptr_on_PLUS != NULL)
 			{
 				put_push |= (REG_MASK | IMM_MASK);
-				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
 			}
 
 			if (ptr_on_X != NULL)
@@ -74,10 +74,9 @@ long translate_asm (asm_t* ptr_assm, char* text)
 				if (ptr_on_PLUS == NULL)
 				{
 					put_push |= REG_MASK;
-					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
 				}
 
-				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = (long) *(ptr_on_X - 1) - 'A' + 1;
+				index_reg = (int) *(ptr_on_X - 1) - 'A' + 1;
 			}
 
 			if (ptr_on_PLUS != NULL)
@@ -85,12 +84,7 @@ long translate_asm (asm_t* ptr_assm, char* text)
 				ptr_on_PLUS += 1;
 				//while (ptr_on_PLUS[0] ==' ') {ptr_on_PLUS += 1;}
 
-				int arg = 0;
-
-				if (sscanf (ptr_on_PLUS, "%d", &arg) != 0)
-				{
-					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
-				}
+				sscanf (ptr_on_PLUS, "%d", &arg);
 			}
 
 			if ((put_push & (REG_MASK | IMM_MASK)) == 0)
@@ -102,14 +96,7 @@ long translate_asm (asm_t* ptr_assm, char* text)
 					if (isdigit(word_in_text [index_latter]))
 					{
 						put_push |= IMM_MASK;
-
-						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
-
-						int arg = 0;
-
 						sscanf (word_in_text + index_latter, "%d", &arg);
-
-						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
 						
 						break;
 					}
@@ -121,6 +108,19 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			if ((put_push & (REG_MASK | IMM_MASK)) == 0)
 			{
 				ptr_assm -> error_in_asm |= PUSH_INCORRECT;
+				continue;
+			}
+
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_push;
+
+			if (arg != POISON)
+			{
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+			}
+
+			if (index_reg > 0)
+			{
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = index_reg;
 			}
 
 			continue;
@@ -134,6 +134,8 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			ptr_text += index_text;
 
 			int put_pop = POP;
+			int index_reg = 0;
+			int arg       = POISON;
 
 			if ((word_in_text[0] == '[') && (strchr (word_in_text, ']') != NULL))
 			{
@@ -152,7 +154,6 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			if (ptr_on_PLUS != NULL)
 			{
 				put_pop |= (REG_MASK | IMM_MASK);
-				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
 			}
 
 			if (ptr_on_X != NULL)
@@ -160,10 +161,9 @@ long translate_asm (asm_t* ptr_assm, char* text)
 				if (ptr_on_PLUS == NULL)
 				{
 					put_pop |= REG_MASK;
-					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
 				}
 
-				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = (long) *(ptr_on_X - 1) - 'A' + 1;
+				index_reg = (int) *(ptr_on_X - 1) - 'A' + 1;
 			}
 
 			if (ptr_on_PLUS != NULL)
@@ -171,12 +171,7 @@ long translate_asm (asm_t* ptr_assm, char* text)
 				ptr_on_PLUS += 1;
 				//while (ptr_on_PLUS[0] ==' ') {ptr_on_PLUS += 1;}
 
-				int arg = 0;
-
-				if (sscanf (ptr_on_PLUS, "%d", &arg) != 0)
-				{
-					(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
-				}
+				sscanf (ptr_on_PLUS, "%d", &arg);
 			}
 
 			if ((put_pop & (REG_MASK | IMM_MASK)) == 0 && (put_pop & MEM_MASK) != 0)
@@ -189,13 +184,7 @@ long translate_asm (asm_t* ptr_assm, char* text)
 					{
 						put_pop |= IMM_MASK;
 
-						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
-
-						int arg = 0;
-
 						sscanf (word_in_text + index_latter, "%d", &arg);
-
-						(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
 						
 						break;
 					}
@@ -207,6 +196,19 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			if ((put_pop & (REG_MASK | IMM_MASK)) == 0)
 			{
 				ptr_assm -> error_in_asm |= POP_INCORRECT;
+				continue;
+			}
+
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = put_pop;
+
+			if (arg != POISON)
+			{
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+			}
+
+			if (index_reg > 0)
+			{
+				(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = index_reg;
 			}
 
 			continue;

@@ -12,11 +12,11 @@ int main (int argc, char** argv)
 
 	FILE* cmd_file = NULL;
 
-	long status_find_file = find_file (argc, argv, &cmd_file);
+	result_find_file status_find_file = find_file (argc, argv, &cmd_file);
 	if (status_find_file) {return status_find_file;}
 
 	long status_launch_spu = launch_spu (cmd_file);
-	if (status_launch_spu) {return status_launch_spu;}
+	if (status_launch_spu) {return (int) status_launch_spu;}
 
-	return NICE;
+	return (int) status_launch_spu;
 }

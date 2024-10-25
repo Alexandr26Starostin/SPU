@@ -12,7 +12,7 @@ result_find_file find_file (int argc, char** argv, FILE** ptr_cmd_file)
 
 	if (argc >= 2)
 	{	
-		*ptr_cmd_file = fopen (argv[1], "r");
+		*ptr_cmd_file = fopen (argv[1], "rb");
 	}
 
 	else 
@@ -32,8 +32,6 @@ result_find_file find_file (int argc, char** argv, FILE** ptr_cmd_file)
 
 		return NOT_FIND_FILE;
 	}
-
-	printf ("4\n");
 
 	return YES_FIND_FILE;
 }

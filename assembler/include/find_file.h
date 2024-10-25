@@ -8,6 +8,8 @@ enum result_find_file: long
 	YES_FIND_FILE = 0
 };
 
+#include <stdio.h>
+
 result_find_file find_file (int argc, char** argv, FILE** ptr_asm_file, FILE** ptr_cmd_file);
 
 #endif

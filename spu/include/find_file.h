@@ -1,7 +1,7 @@
 #ifndef FIND_FILE_H
 #define FIND_FILE_H
 
-enum result_find_file: long
+enum result_find_file
 {
 	FEW_FILES     = -2,
 	NOT_FIND_FILE = -1,

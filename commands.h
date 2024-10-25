@@ -1,7 +1,7 @@
 #ifndef COMMANDS_H
 #define COMMANDS_H
 
-enum command_t : long
+enum command_t
 {
 	GUIDE = 0x00,
 	PUSH  = 0x01,
