@@ -67,6 +67,8 @@ void print_error (long danger_bit)
 		case RAM_NULL:        	     {printf ("pointer on ram == NULL;                                        code_error == %ld\n", danger_bit);     break;}
 		case NOT_FIND_GUIDE:         {printf ("not find 'guide file';                                         code_error == %ld\n", danger_bit);     break;}
 		case INCORRECT_COMMAND:		 {printf ("incorrect command;                                             code_error == %ld\n", danger_bit);     break;}
+		case SIZE_REG_EXCEED:        {printf ("incorrect appeal to reg;                                       code_error == %ld\n", danger_bit);     break;}
+		case SIZE_RAM_EXCEED:        {printf ("incorrect appeal to ram;                                       code_error == %ld\n", danger_bit);     break;}
 		default:                 	 {printf ("this error not find: %ld\n",                                                         danger_bit);     break;}
 	}
 }

@@ -246,6 +246,12 @@ long translate_asm (asm_t* ptr_assm, char* text)
 			continue;                                                                      
 		}  
 
+		if (strcmp (word_in_text, "idiv") == 0)                                                   
+		{                                                                                  
+			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = IDIV;                                                                                                              
+			continue;                                                                      
+		}  
+
 		if (strcmp (word_in_text, "in") == 0)                                                   
 		{                                                                                  
 			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = IN;                                                                                                              

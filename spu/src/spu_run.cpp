@@ -11,8 +11,9 @@
 #include "../include/spu_error.h"
 #include "../include/spu_print.h"
 #include "../include/spu_run.h"
+#include "../include/spu_draw_picture.h"
 
-
+const int   POISON          = -66666;
 const char* NAME_GUIDE_FILE = "../guide.txt";
 
 static int  get_arg_push (spu_t* ptr_spu, size_t* ip);
@@ -90,7 +91,7 @@ long run_spu (spu_t* ptr_spu)
 				stk_push (&(ptr_spu -> stk), b + a);
 				break;
 			}
-			
+
 			case SUB:
 			{
 				element_t a = 0, b = 0;         
@@ -120,6 +121,16 @@ long run_spu (spu_t* ptr_spu)
 				stk_push (&(ptr_spu -> stk), b / a);
 				break;
 			}
+
+			case IDIV:
+			{
+				element_t a = 0, b = 0;         
+				stk_pop (&(ptr_spu -> stk), &a);         
+				stk_pop (&(ptr_spu -> stk), &b);
+
+				stk_push (&(ptr_spu -> stk), (int) (b / a));
+				break;
+			}
 			
 			case OUT:
 			{
@@ -144,7 +155,7 @@ long run_spu (spu_t* ptr_spu)
 				element_t arg = 0;      
 				stk_pop (&(ptr_spu -> stk), &arg);
 
-				stk_push (&(ptr_spu -> stk), (int) sqrt ((double) arg));
+				stk_push (&(ptr_spu -> stk), (long) sqrt ((double) arg));
 				break;
 			}
 			
@@ -153,7 +164,16 @@ long run_spu (spu_t* ptr_spu)
 				element_t arg = 0;      
 				stk_pop (&(ptr_spu -> stk), &arg);
 
-				stk_push (&(ptr_spu -> stk), (int) sin ((double) arg));
+				stk_push (&(ptr_spu -> stk), (long) sin ((double) arg));
+				break;
+			}
+
+			case COS:
+			{
+				element_t arg = 0;      
+				stk_pop (&(ptr_spu -> stk), &arg);
+
+				stk_push (&(ptr_spu -> stk), (long) cos ((double) arg));
 				break;
 			}
 			
@@ -205,6 +225,34 @@ long run_spu (spu_t* ptr_spu)
 				break;
 			}
 
+			case CALL:
+			{
+				stk_push (&(ptr_spu -> func), (long) (ip + 1));
+				ip = (ptr_spu -> cmd)[ip + 1] - 1;
+
+				break;
+			}
+
+			case RET:
+			{
+				long ret_value = 0;
+				stk_pop (&(ptr_spu -> func), &ret_value);
+
+				ip = ret_value;
+
+				break;
+			}
+
+			case DRAW:
+			{
+				size_t index_ram_for_draw = (size_t) (ptr_spu -> cmd)[ip + 1];
+				ip += 1;
+				draw_picture (ptr_spu, index_ram_for_draw);
+
+				break;
+			}
+			
+
 			default:
 			{
 				printf ("SNT_ERROR: '%x'\n", command);
@@ -248,13 +296,25 @@ static int get_arg_push (spu_t* ptr_spu, size_t* ip)
 
 	if (command & REG_MASK) 
 	{
-		size_t index_reg = (size_t) (ptr_spu -> cmd) [(*ip)++];
+		int index_reg = (ptr_spu -> cmd) [(*ip)++];
+
+		if (index_reg >= (int) SIZE_REG || index_reg < 0)
+		{
+			ptr_spu -> error_in_spu |= SIZE_REG_EXCEED;
+			return POISON;
+		}
 
 		arg += (ptr_spu -> reg)[index_reg];
 	}
 
 	if (command & RAM_MASK)
 	{
+		if (arg >= (int) SIZE_RAM)
+		{
+			ptr_spu -> error_in_spu |= SIZE_RAM_EXCEED;
+			return POISON;
+		}
+
 		arg = (ptr_spu -> ram)[arg];
 	}
 
@@ -263,7 +323,7 @@ static int get_arg_push (spu_t* ptr_spu, size_t* ip)
 	return arg;
 }
 
-static int* get_arg_pop  (spu_t* ptr_spu, size_t* ip)
+static int* get_arg_pop (spu_t* ptr_spu, size_t* ip)
 {
 	assert (ptr_spu);
 	assert (ip);
@@ -281,11 +341,23 @@ static int* get_arg_pop  (spu_t* ptr_spu, size_t* ip)
 	{
 		int index_reg = (ptr_spu -> cmd) [(*ip)++];
 
+		if (index_reg >= (int) SIZE_REG || index_reg < 0)
+		{
+			ptr_spu -> error_in_spu |= SIZE_REG_EXCEED;
+			return NULL;
+		}
+
 		ptr_for_arg = ((ptr_spu -> reg) + index_reg);
 	}
 
 	if (command & RAM_MASK)
 	{
+		if (arg >= (int) SIZE_RAM)
+		{
+			ptr_spu -> error_in_spu |= SIZE_RAM_EXCEED;
+			return NULL;
+		}
+
 		ptr_for_arg = ((ptr_spu -> ram) + *ptr_for_arg + arg);
 	}
 

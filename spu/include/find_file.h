@@ -1,6 +1,8 @@
 #ifndef FIND_FILE_H
 #define FIND_FILE_H
 
+#include <stdio.h>
+
 enum result_find_file
 {
 	FEW_FILES     = -2,

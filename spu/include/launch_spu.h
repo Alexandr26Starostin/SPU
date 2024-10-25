@@ -8,7 +8,7 @@ const size_t MAX_LETTERS     = 30;
 const size_t DEFAULT_LEN_STK = 32;
 
 const size_t SIZE_REG = 8;
-const size_t SIZE_RAM = 32;
+const size_t SIZE_RAM = 256;
 const size_t MAX_BIT  = sizeof (long) * 8;
 
 const int SIZE_HEADER   = 3;
@@ -45,6 +45,7 @@ struct spu_t
 	reg_t*  reg;
 	ram_t*  ram;
 	stk_t   stk;
+	stk_t   func;
 	size_t  size_cmd;
 	long    error_in_spu;
 };

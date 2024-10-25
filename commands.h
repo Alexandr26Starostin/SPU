@@ -13,7 +13,7 @@ enum command_t
 	IN    = 0x07,
 	SQRT  = 0x08,
 	SIN   = 0x09,
-	DUMP  = 0x0A,
+	COS   = 0x0A,
 	HLT   = 0x0B,
 	POP   = 0x0C,
 	JMP   = 0x0D,
@@ -21,7 +21,9 @@ enum command_t
 	JB    = 0x0F,
 	CALL  = 0x10,
 	RET   = 0x11,
-	DRAW  = 0x12
+	DRAW  = 0x12,
+	DUMP  = 0x13,
+	IDIV  = 0x14 
 };
 
 #endif

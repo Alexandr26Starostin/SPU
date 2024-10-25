@@ -5,11 +5,11 @@
 #include "../include/launch_spu.h"
 #include "../include/spu_print.h"
 
-#define PRINT_CMD
-#define PRINT_REG
-#define PRINT_RAM
-#define PRINT_STK
-//#define PRINT_FUNC
+#define PRINT_CMD_
+#define PRINT_REG_
+#define PRINT_RAM_
+#define PRINT_STK_
+#define PRINT_FUNC_
 
 #ifdef PRINT_CMD
 	static void print_cmd (spu_t* ptr_spu, size_t position);
@@ -25,6 +25,10 @@
 
 #ifdef PRINT_STK
 	static void print_stk (spu_t* ptr_spu);
+#endif
+
+#ifdef PRINT_FUNC
+	static void print_func (spu_t* ptr_spu);
 #endif
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -49,7 +53,11 @@ void print_spu (spu_t* ptr_spu, size_t position)
 		print_stk (ptr_spu);
 	#endif
 
-	#if  defined (PRINT_CMD) || defined (PRINT_REG) || defined (PRINT_RAM) || defined (PRINT_STK)
+	#ifdef PRINT_FUNC
+		print_func (ptr_spu);
+	#endif
+
+	#if  defined (PRINT_CMD) || defined (PRINT_REG) || defined (PRINT_RAM) || defined (PRINT_STK) || defined (PRINT_FUNC)
 		printf ("\n------------------------------------------------------------------------------------------------------------\n\n");
 		getchar ();
 	#else
@@ -97,14 +105,16 @@ void print_spu (spu_t* ptr_spu, size_t position)
 		char min_latter = 'A';
 		char max_latter = 'A' - 1 + SIZE_REG;
 
-		for (char latter = min_latter; latter <= max_latter; latter++)
+		printf ("0X ");
+
+		for (char latter = min_latter; latter < max_latter; latter++)
 		{
 			printf ("%cX ", latter);
 		}
 
 		printf ("\n");
 
-		for (size_t index_reg = 1; index_reg <= SIZE_REG; index_reg++)
+		for (size_t index_reg = 0; index_reg < SIZE_REG; index_reg++)
 		{
 			printf ("%x  ", (ptr_spu -> reg)[index_reg]);
 		}
@@ -144,5 +154,16 @@ void print_spu (spu_t* ptr_spu, size_t position)
 		stk_dump  (&(ptr_spu -> stk), __FILE__, __LINE__);
 
 		printf ("\n");
+	}
+#endif
+
+#ifdef PRINT_FUNC
+	static void print_func (spu_t* ptr_spu)
+	{
+		assert (ptr_spu);
+
+		printf ("func:\n\n");
+
+		stk_dump (&(ptr_spu -> func), __FILE__, __LINE__);
 	}
 #endif

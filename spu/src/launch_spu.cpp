@@ -120,7 +120,8 @@ static void creat_spu (spu_t* ptr_spu, int len_cmd)
 	ptr_spu -> reg = (reg_t*) calloc (SIZE_REG, sizeof (reg_t));
 	ptr_spu -> ram = (ram_t*) calloc (SIZE_RAM, sizeof (ram_t));
 
-	stk_ctor (&(ptr_spu -> stk), DEFAULT_LEN_STK);
+	stk_ctor (&(ptr_spu -> stk),  DEFAULT_LEN_STK);
+	stk_ctor (&(ptr_spu -> func), DEFAULT_LEN_STK);
 }
 
 static void destroy_spu (spu_t* ptr_spu)
@@ -132,6 +133,7 @@ static void destroy_spu (spu_t* ptr_spu)
 	free (ptr_spu -> ram);
 
 	stk_dtor (&(ptr_spu -> stk));
+	stk_dtor (&(ptr_spu -> func));
 }
 
 static void read_cmd_file (spu_t* ptr_spu, FILE* cmd_file)
