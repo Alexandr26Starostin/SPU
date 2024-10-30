@@ -4,12 +4,12 @@
 #include <ctype.h>
 
 
-#include "../../commands.h"
-#include "../include/launch_asm.h"
-#include "../include/asm_error.h"
-#include "../include/asm_print.h"
-#include "../include/asm_translate.h"
-#include "../include/asm_labels.h"
+#include "commands.h"
+#include "launch_asm.h"
+#include "asm_error.h"
+#include "asm_print.h"
+#include "asm_translate.h"
+#include "asm_labels.h"
 
 const int POISON = -666666;
 

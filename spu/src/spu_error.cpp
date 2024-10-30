@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/launch_spu.h"
-#include "../include/spu_error.h"
+#include "launch_spu.h"
+#include "spu_error.h"
 
 #define CHECK_SPU_ON_NULL_(ptr_array, name_error)   \
 	if (ptr_spu -> ptr_array == NULL)               \

@@ -1,8 +1,8 @@
 #ifndef LAUNCH_SPU_H
 #define LAUNCH_SPU_H
 
-#include "../../stack/include/const_define_struct.h"
-#include "../../commands.h"
+#include "const_define_struct.h"
+#include "commands.h"
 
 #define PRINT_SPU_NOT
 

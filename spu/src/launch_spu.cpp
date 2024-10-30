@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "../../stack/include/const_define_struct.h"
-#include "../../stack/include/hash.h"
-#include "../../stack/include/operations_with_stack.h"
-#include "../../stack/include/stk_error.h"
+#include "const_define_struct.h"
+#include "hash.h"
+#include "operations_with_stack.h"
+#include "stk_error.h"
 
-#include "../include/spu_error.h"
-#include "../include/spu_run.h"
-#include "../include/launch_spu.h"
+#include "spu_error.h"
+#include "spu_run.h"
+#include "launch_spu.h"
 
 #ifdef PRINT_HEADER_
 	static void print_header  (header_t* hdr);

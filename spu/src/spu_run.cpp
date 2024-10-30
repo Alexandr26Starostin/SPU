@@ -2,16 +2,16 @@
 #include <math.h>
 #include <assert.h>
 
-#include "../../stack/include/const_define_struct.h"
-#include "../../stack/include/hash.h"
-#include "../../stack/include/operations_with_stack.h"
-#include "../../stack/include/stk_error.h"
+#include "const_define_struct.h"
+#include "hash.h"
+#include "operations_with_stack.h"
+#include "stk_error.h"
 
-#include "../../commands.h"
-#include "../include/spu_error.h"
-#include "../include/spu_print.h"
-#include "../include/spu_run.h"
-#include "../include/spu_draw_picture.h"
+#include "commands.h"
+#include "spu_error.h"
+#include "spu_print.h"
+#include "spu_run.h"
+#include "spu_draw_picture.h"
 
 const int   POISON          = -66666;
 const char* NAME_GUIDE_FILE = "../guide.txt";

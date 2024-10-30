@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/find_file.h"
+#include "find_file.h"
 
 //-----------------------------------------------------------------------
 

@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/find_file.h"
-#include "../include/launch_asm.h"
+#include "find_file.h"
+#include "launch_asm.h"
 
 //-----------------------------------------------------------------------------
 

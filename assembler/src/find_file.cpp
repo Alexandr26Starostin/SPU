@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "../include/find_file.h"
+#include "find_file.h"
 
 //Default names of files:
 //"../asm.txt" "../cmd.txt"

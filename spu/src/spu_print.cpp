@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../../commands.h"
-#include "../include/launch_spu.h"
-#include "../include/spu_print.h"
+#include "commands.h"
+#include "launch_spu.h"
+#include "spu_print.h"
 
 #ifdef PRINT_SPU_
 	#ifdef PRINT_CMD_

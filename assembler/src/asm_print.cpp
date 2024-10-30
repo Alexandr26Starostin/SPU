@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/launch_asm.h"
-#include "../include/asm_print.h"
+#include "launch_asm.h"
+#include "asm_print.h"
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------
 #ifdef PRINT_ASM_

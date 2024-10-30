@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/find_file.h"
-#include "../include/launch_spu.h"
+#include "find_file.h"
+#include "launch_spu.h"
 
 //---------------------------------------------------------------------------
 

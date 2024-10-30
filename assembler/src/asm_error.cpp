@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../../commands.h"
-#include "../include/launch_asm.h"
-#include "../include/asm_error.h"
+#include "commands.h"
+#include "launch_asm.h"
+#include "asm_error.h"
 
 #define CHECK_ASSM_ON_NULL_(ptr_array, name_error)   \
 	if (ptr_assm -> ptr_array == NULL)               \

@@ -2,8 +2,8 @@
 #include <assert.h>
 #include <string.h>
 
-#include "../include/launch_asm.h"
-#include "../include/asm_labels.h"
+#include "launch_asm.h"
+#include "asm_labels.h"
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

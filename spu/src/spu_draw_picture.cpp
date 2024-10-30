@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "../include/launch_spu.h"
-#include "../include/spu_draw_picture.h"
+#include "launch_spu.h"
+#include "spu_draw_picture.h"
 
 const size_t SIZE_PICTURE = len_side_of_frame * len_side_of_frame;   // len x len
 
