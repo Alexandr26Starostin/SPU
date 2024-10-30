@@ -8,6 +8,8 @@
 		"*.tcc": "cpp",
 		"fstream": "cpp",
 		"cstring": "cpp",
-		"random": "cpp"
+		"random": "cpp",
+		"ratio": "cpp",
+		"cstdlib": "cpp"
 	}
 }

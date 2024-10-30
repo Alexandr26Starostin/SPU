@@ -15,51 +15,15 @@ const int POISON = -666666;
 
 static long put_arg_push (char** ptr_text, char* word_in_text, int* index_text, asm_t* ptr_assm);
 static long put_arg_pop  (char** ptr_text, char* word_in_text, int* index_text, asm_t* ptr_assm);
+static long compile_arg  (char** ptr_text, char* word_in_text, int* index_text, asm_t* ptr_assm, command_t cmd);
 
-#define STR_PUSH_OR_POP_(name_cmd, cmd)  \
-	if (strcmp (word_in_text, name_cmd) == 0)                              \
-	{	                                                                 \
-		put_arg_##cmd (&ptr_text, word_in_text, &index_text, ptr_assm);    \
-		continue;                                                        \
+#define DEF_CMD_(name_cmd, num, arg, ...)  \
+	if (strcmp (word_in_text, #name_cmd) == 0)  \
+	{                                           \
+		if (arg) {compile_arg (&ptr_text, word_in_text, &index_text, ptr_assm, cmd_##name_cmd);}	                                      \
+		else {(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = cmd_##name_cmd;}                            \
+		continue;                                                                                     \
 	}
-
-#define SIMPLE_CMD_(str_name_cmd, name_cmd)                                   \
-	if (strcmp (word_in_text, str_name_cmd) == 0)                             \
-	{                                                                         \
-		(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = name_cmd;             \
-		continue;                                                             \
-	}
-
-#define JUMP_CMD_(str_name_cmd, name_cmd)                             \
-	if (strcmp (word_in_text, str_name_cmd) == 0)                     \
-	{                                                                 \
-		(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = name_cmd;     \
-																	  \
-		sscanf (ptr_text, "%s%n", word_in_text, &index_text);         \
-                                                                      \
-		ptr_text += index_text;                                       \
-                                                                      \
-		if (strchr(word_in_text, ':') != NULL)                        \
-		{                                                             \
-			long label = find_label (ptr_assm, word_in_text);         \
-			(ptr_assm -> cmd) [ptr_assm -> cmd_count] = (int) label;  \
-			if (label < 0)                                            \
-			{                                                         \
-				write_in_fix_up (ptr_assm);                           \
-			}                                                         \
-                                                                      \
-			(ptr_assm -> cmd_count) += 1;                             \
-		}                                                             \
-                                                                      \
-		else                                                          \
-		{                                                             \
-			ptr_assm -> error_in_asm |= LABEL_INCORRECT;              \
-		}                                                             \
-                                                                      \
-		continue;                                                     \
-	}
-
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 long translate_asm (asm_t* ptr_assm, char* text)
@@ -73,14 +37,14 @@ long translate_asm (asm_t* ptr_assm, char* text)
 	
 	while (sscanf (ptr_text, "%s%n", word_in_text, &index_text) != EOF)
 	{
-		#ifdef PRINT_ASM_
-			printf ("word from sscanf: %s\n", word_in_text);
-		#endif
-
 		if (asm_error (ptr_assm, __FILE__, __LINE__))
 		{
 			return ptr_assm -> error_in_asm;
 		}
+
+		#ifdef PRINT_ASM_
+			printf ("word from sscanf: %s\n", word_in_text);
+		#endif
 
 		#ifdef PRINT_ASM_
 			print_asm (ptr_assm);
@@ -88,34 +52,7 @@ long translate_asm (asm_t* ptr_assm, char* text)
 
 		ptr_text += index_text;
 
-		//-----------------------------------------------------------------------------------------------
-
-		STR_PUSH_OR_POP_("push", push)
-		STR_PUSH_OR_POP_("pop",  pop)
-
-		SIMPLE_CMD_("add",   ADD)
-		SIMPLE_CMD_("out",   OUT)
-		SIMPLE_CMD_("sub",   SUB)
-		SIMPLE_CMD_("mul",   MUL)
-		SIMPLE_CMD_("div",   DIV)
-		SIMPLE_CMD_("idiv",  IDIV)
-		SIMPLE_CMD_("in",    IN)
-		SIMPLE_CMD_("sqrt",  SQRT)
-		SIMPLE_CMD_("sin",   SIN)
-		SIMPLE_CMD_("cos",   COS)
-		SIMPLE_CMD_("guide", GUIDE)
-		SIMPLE_CMD_("dump",  DUMP)
-		SIMPLE_CMD_("hlt",   HLT)
-		SIMPLE_CMD_("ret",   RET)
-		
-		JUMP_CMD_("jmp",  JMP)
-		JUMP_CMD_("ja",   JA)
-		JUMP_CMD_("jb",   JB)
-		JUMP_CMD_("jae",  JAE)
-		JUMP_CMD_("jbe",  JBE)
-		JUMP_CMD_("je",   JE)
-		JUMP_CMD_("jne",  JNE)
-		JUMP_CMD_("call", CALL)
+		#include "dsl.cpp"
 
 		//------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -130,21 +67,6 @@ long translate_asm (asm_t* ptr_assm, char* text)
 		if (strchr(word_in_text, ':') != NULL)
 		{
 			write_in_labels (ptr_assm, word_in_text);
-			continue;
-		}
-
-		//-----------------------------------------------------------------------------------------------------------------------------------------------
-
-		if (strcmp (word_in_text, "draw") == 0)
-		{
-			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = DRAW;      
-
-			int arg = 0;
-			sscanf (ptr_text, "%d%n", &arg, &index_text);
-			ptr_text += index_text;
-
-			(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
-
 			continue;
 		}
 
@@ -180,7 +102,7 @@ static long put_arg_push (char** ptr_text, char* word_in_text, int* index_text, 
 	sscanf (*ptr_text, "%s%n", word_in_text, index_text);
 	*ptr_text += *index_text;
 
-	int put_push  = PUSH;
+	int put_push  = cmd_push;
 	int index_reg = 0;
 	int arg       = POISON;
 
@@ -273,7 +195,7 @@ static long put_arg_pop  (char** ptr_text, char* word_in_text, int* index_text, 
 	sscanf (*ptr_text, "%s%n", word_in_text, index_text);
 	*ptr_text += *index_text;
 
-	int put_pop   = POP;
+	int put_pop   = cmd_pop;
 	int index_reg = 0;
 	int arg       = POISON;
 
@@ -353,3 +275,65 @@ static long put_arg_pop  (char** ptr_text, char* word_in_text, int* index_text, 
 
 	return ptr_assm -> error_in_asm;
 }
+
+static long compile_arg  (char** ptr_text, char* word_in_text, int* index_text, asm_t* ptr_assm, command_t name_cmd)
+{
+	assert (ptr_text);
+	assert (*ptr_text);
+	assert (word_in_text);
+	assert (index_text);
+	assert (ptr_assm);
+
+	if (name_cmd == cmd_pop)
+	{
+		put_arg_pop (ptr_text, word_in_text, index_text, ptr_assm);
+		return ptr_assm -> error_in_asm;
+	}
+
+	if (name_cmd == cmd_push)
+	{
+		put_arg_push (ptr_text, word_in_text, index_text, ptr_assm);
+		return ptr_assm -> error_in_asm;
+	}
+
+	(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = name_cmd;
+
+	if (name_cmd == cmd_draw)
+	{
+		int arg = 0;
+		sscanf (*ptr_text, "%d%n", &arg, index_text);
+		*ptr_text += *index_text;
+
+		(ptr_assm -> cmd) [(ptr_assm -> cmd_count)++] = arg;
+
+		return ptr_assm -> error_in_asm;
+	}
+
+	//jump:
+
+	sscanf (*ptr_text, "%s%n", word_in_text, index_text);        
+                                                                      
+	*ptr_text += *index_text;                                       
+                                                                      
+	if (strchr(word_in_text, ':') != NULL)                        
+	{                                                             
+		long label = find_label (ptr_assm, word_in_text);         
+		(ptr_assm -> cmd) [ptr_assm -> cmd_count] = (int) label;  
+		if (label < 0)                                            
+		{                                                         
+			write_in_fix_up (ptr_assm);                           
+		}                                                         
+                                                                      
+		(ptr_assm -> cmd_count) += 1;                             
+	}                                                             
+                                                                      
+	else                                                          
+	{                                                             
+		ptr_assm -> error_in_asm |= LABEL_INCORRECT;              
+	}                                                             
+                                                                      
+	return ptr_assm -> error_in_asm;                                                     
+}
+
+#undef DEF_CMD_
+

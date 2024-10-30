@@ -1,7 +1,7 @@
 #ifndef LAUNCH_ASM_H
 #define LAUNCH_ASM_H
 
-#define PRINT_ASM_NOT
+#define PRINT_ASM_
 #define PRINT_CMD_
 #define PRINT_LABELS_
 #define PRINT_FIX_UP_
