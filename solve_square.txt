@@ -40,13 +40,13 @@ push 0
 ja NEXT:
 
 push DX
-push 100
+push 10000
 mul
 sqrt
 pop DX
 
 push BX
-push -10
+push -100
 mul
 push DX
 add

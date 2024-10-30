@@ -18,9 +18,7 @@ DEF_CMD_(guide, 0x00, false,
 		printf ("\n");
 	})
 
-
-
-
+//---------------------------------------------------------------------------------------------------
 
 #define SIMPLE_CMD_WITH_TWO_ARG_(name_cmd, operation)                                   \
 	{                                    \
@@ -41,6 +39,8 @@ DEF_CMD_(mul, 0x04, false, SIMPLE_CMD_WITH_TWO_ARG_(MUL, *))
 DEF_CMD_(div, 0x05, false, SIMPLE_CMD_WITH_TWO_ARG_(DIV, /))
 
 #undef SIMPLE_CMD_WITH_TWO_ARG_
+
+//--------------------------------------------------------------------------------------------------------
 
 DEF_CMD_(idiv, 0x14, false,
 	{
@@ -63,7 +63,7 @@ DEF_CMD_(out, 0x06, false,
 DEF_CMD_(in, 0x07, false,
 	{
 		element_t arg = 0;
-		scanf ("%lx", &arg);
+		scanf ("%ld", &arg);
 		stk_push (&(ptr_spu -> stk), arg);
 	})
 
@@ -127,7 +127,7 @@ DEF_CMD_(dump, 0x13, false,
 		stk_dump (&(ptr_spu -> stk), __FILE__, __LINE__);
 	})
 
-
+//--------------------------------------------------------------------------------------------------------
 
 #define JUMP_CMD_(operation)                             \
 	{                                                 \
