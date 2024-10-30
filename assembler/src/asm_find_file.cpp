@@ -2,12 +2,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "find_file.h"
-
-//Default names of files:
-//"../asm.txt" "../cmd.txt"
-
-//TODO -o
+#include "asm_find_file.h"
 
 result_find_file find_file (int argc, char** argv, FILE** ptr_asm_file, FILE** ptr_cmd_file)
 {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "find_file.h"
+#include "spu_find_file.h"
 
 //-----------------------------------------------------------------------
 
