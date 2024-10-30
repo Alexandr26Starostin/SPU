@@ -4,8 +4,7 @@
 #include "const_define_struct.h"
 #include "commands.h"
 
-#define PRINT_SPU_NOT
-
+#define PRINT_SPU_
 #ifdef PRINT_SPU_
 	#define PRINT_CMD_
 	#define PRINT_REG_

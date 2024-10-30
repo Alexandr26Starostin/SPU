@@ -137,7 +137,7 @@ long run_spu (spu_t* ptr_spu)
 			case IN:
 			{
 				element_t arg = 0;
-				scanf ("%lx", &arg);
+				scanf ("%ld", &arg);
 				stk_push (&(ptr_spu -> stk), arg);
 				break;
 			}

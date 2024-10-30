@@ -87,7 +87,7 @@ je  MORE_OR_NOT_ROOTS:
 
 ONE_ROOT:
 push CX
-push -100
+push -10
 mul
 push BX
 div
