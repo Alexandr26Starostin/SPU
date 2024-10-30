@@ -1,15 +1,13 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "find_file.h"
+#include "asm_find_file.h"
 #include "launch_asm.h"
 
 //-----------------------------------------------------------------------------
 
 int main (int argc, char** argv)
 {
-	assert (argv);
-
 	FILE* asm_file = NULL; 
 	FILE* cmd_file = NULL;
 
