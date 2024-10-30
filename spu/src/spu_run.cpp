@@ -19,37 +19,8 @@ const char* NAME_GUIDE_FILE = "../guide.txt";
 static int  get_arg_push (spu_t* ptr_spu, size_t* ip);
 static int* get_arg_pop  (spu_t* ptr_spu, size_t* ip);
 
-#define SIMPLE_CMD_WITH_TWO_ARG_(name_cmd, operation)                                   \
-	case name_cmd:                       \
-	{                                    \
-		element_t a = 0, b = 0;         \
-		stk_pop (&(ptr_spu -> stk), &a);                   \
-		stk_pop (&(ptr_spu -> stk), &b);                   \
-                                                              \
-		stk_push (&(ptr_spu -> stk), b operation a);       \
-		break;                                                 \
-	}
-
-
-#define JUMP_CMD_(name_cmd, operation)                             \
-	case name_cmd:                                  \
-	{                                                 \
-		element_t a = 0, b = 0;          \
-		stk_pop (&(ptr_spu -> stk), &a);        \
-		stk_pop (&(ptr_spu -> stk), &b);                 \
-                                                         \
-		if (a operation b)                                    \
-		{                                                  \
-			ip = (ptr_spu -> cmd)[ip + 1] - 1;                \
-		}                                                      \
-		else                                                    \
-		{                                                         \
-			ip += 1;                                            \
-		}                                                           \
-                                                              \
-		break;                                           \
-	}
-
+#define DEF_CMD_(name_cmd, num, arg, ...)    \
+	case cmd_##name_cmd: {__VA_ARGS__; break;}
 
 //--------------------------------------------------------------------------------------------------------------------------
 
@@ -79,146 +50,11 @@ long run_spu (spu_t* ptr_spu)
 
 		cmd_t command = (ptr_spu -> cmd)[ip];
 
-		if ((command & COMMAND_MACK) == HLT)
-		{
-			fclose      (guide_file);
-			break;
-		}
+		
 
 		switch (command & COMMAND_MACK)
 		{
-			case GUIDE:
-			{
-				char str[MAX_LETTERS] = "";
-				while (fgets (str, MAX_LETTERS, guide_file) != NULL) {printf ("%s", str);}
-
-				printf ("\n");
-				break;
-			}
-
-			case PUSH:
-			{
-				int arg = get_arg_push (ptr_spu, &ip);
-				stk_push (&(ptr_spu -> stk), (element_t) arg);
-
-				break;
-			}
-
-			case POP:
-			{
-				long arg = 0;
-				stk_pop (&(ptr_spu -> stk), &arg);
-
-				*get_arg_pop (ptr_spu, &ip) = (int) arg;
-
-				break;
-			}
-
-			case IDIV:
-			{
-				element_t a = 0, b = 0;         
-				stk_pop (&(ptr_spu -> stk), &a);         
-				stk_pop (&(ptr_spu -> stk), &b);
-
-				stk_push (&(ptr_spu -> stk), (int) (b / a));
-				break;
-			}
-
-			case OUT:
-			{
-				element_t arg = 0;      
-				stk_pop (&(ptr_spu -> stk), &arg);
-
-				printf ("%ld\n", arg);
-				getchar ();
-				break;
-			}
-
-			case IN:
-			{
-				element_t arg = 0;
-				scanf ("%lx", &arg);
-				stk_push (&(ptr_spu -> stk), arg);
-				break;
-			}
-
-			case SQRT:
-			{
-				element_t arg = 0;      
-				stk_pop (&(ptr_spu -> stk), &arg);
-
-				stk_push (&(ptr_spu -> stk), (long) sqrt ((double) arg));
-				break;
-			}
-
-			case SIN:
-			{
-				element_t arg = 0;      
-				stk_pop (&(ptr_spu -> stk), &arg);
-
-				stk_push (&(ptr_spu -> stk), (long) sin ((double) arg));
-				break;
-			}
-
-			case COS:
-			{
-				element_t arg = 0;      
-				stk_pop (&(ptr_spu -> stk), &arg);
-
-				stk_push (&(ptr_spu -> stk), (long) cos ((double) arg));
-				break;
-			}
-			
-			case DUMP:
-			{
-				stk_dump (&(ptr_spu -> stk), __FILE__, __LINE__);
-				break;
-			}
-			
-			SIMPLE_CMD_WITH_TWO_ARG_(ADD, +)
-			SIMPLE_CMD_WITH_TWO_ARG_(SUB, -)
-			SIMPLE_CMD_WITH_TWO_ARG_(MUL, *)
-			SIMPLE_CMD_WITH_TWO_ARG_(DIV, /)
-
-			case JMP:
-			{
-				ip = (ptr_spu -> cmd)[ip + 1] - 1;
-				break;
-			}
-
-			JUMP_CMD_(JA,  >)                                     //Нижний большего верхнего
-			JUMP_CMD_(JAE, >=)                                      //Нижний не менее верхнего
-			JUMP_CMD_(JB,  <)                                      //Верхний больше нижнего
-			JUMP_CMD_(JBE, <=)                                         //Верхний не меньше нижнего
-			JUMP_CMD_(JE,  ==)                                         //Верхний равен нижнему
-			JUMP_CMD_(JNE, !=)                                         //Верхний не равен нижнему
-
-			case CALL:
-			{
-				stk_push (&(ptr_spu -> func), (long) (ip + 1));
-				ip = (ptr_spu -> cmd)[ip + 1] - 1;
-
-				break;
-			}
-
-			case RET:
-			{
-				long ret_value = 0;
-				stk_pop (&(ptr_spu -> func), &ret_value);
-
-				ip = ret_value;
-
-				break;
-			}
-
-			case DRAW:
-			{
-				size_t index_ram_for_draw = (size_t) (ptr_spu -> cmd)[ip + 1];
-				ip += 1;
-				draw_picture (ptr_spu, index_ram_for_draw);
-
-				break;
-			}
+			#include "dsl.cpp"
 			
 			default:
 			{
@@ -336,3 +172,6 @@ static int* get_arg_pop (spu_t* ptr_spu, size_t* ip)
 
 	return ptr_for_arg;
 }
+
+
+#undef DEF_CMD_
