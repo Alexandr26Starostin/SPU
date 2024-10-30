@@ -8,8 +8,6 @@
 
 int main (int argc, char** argv)
 {
-	assert (argv);
-
 	FILE* asm_file = NULL; 
 	FILE* cmd_file = NULL;
 
