@@ -3,6 +3,8 @@
 
 #include "launch_asm.h"
 
-void print_asm (asm_t* ptr_assm);
+#ifdef PRINT_ASM_
+	void print_asm (asm_t* ptr_assm);
+#endif
 
 #endif

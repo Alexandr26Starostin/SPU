@@ -4,8 +4,7 @@
 #include "../include/launch_spu.h"
 #include "../include/spu_draw_picture.h"
 
-const size_t len_side_of_frame = 11;
-const size_t SIZE_PICTURE      = len_side_of_frame * len_side_of_frame;   // len x len
+const size_t SIZE_PICTURE = len_side_of_frame * len_side_of_frame;   // len x len
 
 void draw_picture (spu_t* ptr_spu, size_t index_ram_for_draw)
 {

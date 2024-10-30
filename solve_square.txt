@@ -1,0 +1,117 @@
+in
+pop AX
+
+in
+pop BX
+
+in
+pop CX
+
+push AX
+push 0
+
+jne DISCRIMINANT:
+
+push AX
+push 0
+
+je LINE:
+
+
+NEXT:
+
+hlt
+
+DISCRIMINANT:
+
+push BX
+push BX
+mul
+push 4
+push AX
+push CX
+mul
+mul
+sub
+pop DX
+
+push DX
+push 0
+ja NEXT:
+
+push DX
+push 10000
+mul
+sqrt
+pop DX
+
+push BX
+push -100
+mul
+push DX
+add
+push 2
+push AX
+mul
+div
+pop EX
+
+push BX
+push -100
+mul
+push DX
+sub
+push 2
+push AX
+mul
+div
+pop FX
+
+push FX
+out
+push EX
+out
+
+jmp NEXT:
+
+
+LINE:
+
+push BX
+push 0
+jne  ONE_ROOT:
+
+push BX
+push 0
+je  MORE_OR_NOT_ROOTS:
+
+ONE_ROOT:
+push CX
+push -100
+mul
+push BX
+div
+out
+
+jmp NEXT:
+
+
+MORE_OR_NOT_ROOTS:
+push CX
+push 0
+jne  NEXT:
+
+push 0
+out
+push 1
+out
+push 2
+out
+push 3
+out
+push 4
+out
+push 5
+out
+
+jmp NEXT:

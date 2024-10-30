@@ -5,165 +5,151 @@
 #include "../include/launch_spu.h"
 #include "../include/spu_print.h"
 
-#define PRINT_CMD_
-#define PRINT_REG_
-#define PRINT_RAM_
-#define PRINT_STK_
-#define PRINT_FUNC_
+#ifdef PRINT_SPU_
+	#ifdef PRINT_CMD_
+		static void print_cmd (spu_t* ptr_spu, size_t position);
+	#endif
 
-#ifdef PRINT_CMD
-	static void print_cmd (spu_t* ptr_spu, size_t position);
-#endif
+	#ifdef PRINT_REG_
+		static void print_reg (spu_t* ptr_spu);
+	#endif 
 
-#ifdef PRINT_REG
-	static void print_reg (spu_t* ptr_spu);
-#endif 
+	#ifdef PRINT_RAM_
+		static void print_ram (spu_t* ptr_spu);
+	#endif
 
-#ifdef PRINT_RAM
-	static void print_ram (spu_t* ptr_spu);
-#endif
+	#ifdef PRINT_STK_
+		static void print_stk (spu_t* ptr_spu);
+	#endif
 
-#ifdef PRINT_STK
-	static void print_stk (spu_t* ptr_spu);
-#endif
+	#ifdef PRINT_FUNC_
+		static void print_func (spu_t* ptr_spu);
+	#endif
 
-#ifdef PRINT_FUNC
-	static void print_func (spu_t* ptr_spu);
-#endif
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void print_spu (spu_t* ptr_spu, size_t position)
-{
-	assert (ptr_spu);
 
-	#ifdef PRINT_CMD
-		print_cmd (ptr_spu, position);
-	#endif
-
-	#ifdef PRINT_REG
-		print_reg (ptr_spu);
-	#endif
-	
-	#ifdef PRINT_RAM
-		print_ram (ptr_spu);
-	#endif
-
-	#ifdef PRINT_STK
-		print_stk (ptr_spu);
-	#endif
-
-	#ifdef PRINT_FUNC
-		print_func (ptr_spu);
-	#endif
-
-	#if  defined (PRINT_CMD) || defined (PRINT_REG) || defined (PRINT_RAM) || defined (PRINT_STK) || defined (PRINT_FUNC)
-		printf ("\n------------------------------------------------------------------------------------------------------------\n\n");
-		getchar ();
-	#else
-		size_t position_false = 0;
-		position_false       += position;
-	#endif
-}
-
-//---------------------------------------------------------------------------------------------------------------------------------------------
-
-#ifdef PRINT_CMD
-	static void print_cmd (spu_t* ptr_spu, size_t position)
+	void print_spu (spu_t* ptr_spu, size_t position)
 	{
 		assert (ptr_spu);
 
-		printf ("cmd:");
+		#ifdef PRINT_CMD_
+			print_cmd (ptr_spu, position);
+		#endif
 
-		for (size_t ip = 0; ip < ptr_spu -> size_cmd; ip++)
-		{
-			printf ("%3ld ", ip);
-		}
-		printf ("\n");
+		#ifdef PRINT_REG_
+			print_reg (ptr_spu);
+		#endif
+		
+		#ifdef PRINT_RAM_
+			print_ram (ptr_spu);
+		#endif
 
-		for (size_t ip = 0; ip < ptr_spu -> size_cmd; ip++)
-		{
-			printf ("%3x ", (ptr_spu -> cmd)[ip]);
-		}
-		printf ("\n");
+		#ifdef PRINT_STK_
+			print_stk (ptr_spu);
+		#endif
 
-		for (size_t ip = 0; ip < position; ip++)
-		{
-			printf ("    ");
-		}
-		printf ("  !\n\n");
+		#ifdef PRINT_FUNC_
+			print_func (ptr_spu);
+		#endif
+
+		#if  defined (PRINT_CMD_) || defined (PRINT_REG_) || defined (PRINT_RAM_) || defined (PRINT_STK_) || defined (PRINT_FUNC_)
+			printf ("\n------------------------------------------------------------------------------------------------------------\n\n");
+			getchar ();
+		#endif
 	}
-#endif
 
-#ifdef PRINT_REG
-	static void print_reg (spu_t* ptr_spu)
-	{
-		assert (ptr_spu);
+	//---------------------------------------------------------------------------------------------------------------------------------------------
 
-		printf ("reg:\n\n");
-
-		char min_latter = 'A';
-		char max_latter = 'A' - 1 + SIZE_REG;
-
-		printf ("0X ");
-
-		for (char latter = min_latter; latter < max_latter; latter++)
+	#ifdef PRINT_CMD_
+		static void print_cmd (spu_t* ptr_spu, size_t position)
 		{
-			printf ("%cX ", latter);
+			assert (ptr_spu);
+
+			printf ("cmd:\n\n");
+
+			for (size_t ip = 0; ip < ptr_spu -> size_cmd; ip++)
+			{
+				printf ("[%3ld] == %3x ", ip, (ptr_spu -> cmd)[ip]);
+
+				if (ip == position)
+				{
+					printf ("<--");
+				}
+
+				printf ("\n");
+			}
+
+			printf ("\n");
 		}
+	#endif
 
-		printf ("\n");
-
-		for (size_t index_reg = 0; index_reg < SIZE_REG; index_reg++)
+	#ifdef PRINT_REG_
+		static void print_reg (spu_t* ptr_spu)
 		{
-			printf ("%x  ", (ptr_spu -> reg)[index_reg]);
+			assert (ptr_spu);
+
+			printf ("reg:\n\n");
+
+			char min_latter = 'A';
+			char max_latter = 'A' - 1 + SIZE_REG;
+
+			printf ("0X ");
+
+			for (char latter = min_latter; latter < max_latter; latter++)
+			{
+				printf ("%cX ", latter);
+			}
+
+			printf ("\n");
+
+			for (size_t index_reg = 0; index_reg < SIZE_REG; index_reg++)
+			{
+				printf ("%x  ", (ptr_spu -> reg)[index_reg]);
+			}
+
+			printf ("\n\n");
 		}
+	#endif
 
-		printf ("\n\n");
-	}
-#endif
-
-#ifdef PRINT_RAM
-	static void print_ram (spu_t* ptr_spu)
-	{
-		assert (ptr_spu);
-
-		printf ("ram:\n\n");
-
-		for (size_t index_ram = 0; index_ram < SIZE_RAM; index_ram++)
+	#ifdef PRINT_RAM_
+		static void print_ram (spu_t* ptr_spu)
 		{
-			printf ("%3ld ", index_ram);
-		}
-		printf ("\n");
+			assert (ptr_spu);
 
-		for (size_t index_ram = 0; index_ram < SIZE_RAM; index_ram++)
+			printf ("ram:\n\n");
+
+			for (size_t index_ram = 0; index_ram < SIZE_RAM; index_ram++)
+			{
+				printf ("[%3ld] == %3x\n", index_ram, (ptr_spu -> ram)[index_ram]);
+			}
+		
+			printf ("\n");
+		}
+	#endif
+
+	#ifdef PRINT_STK_
+		static void print_stk (spu_t* ptr_spu)
 		{
-			printf ("%3x ", (ptr_spu -> ram)[index_ram]);
+			assert (ptr_spu);
+
+			printf ("stk:\n\n");
+
+			stk_dump  (&(ptr_spu -> stk), __FILE__, __LINE__);
+
+			printf ("\n");
 		}
-		printf ("\n\n");
-	}
-#endif
+	#endif
 
-#ifdef PRINT_STK
-	static void print_stk (spu_t* ptr_spu)
-	{
-		assert (ptr_spu);
+	#ifdef PRINT_FUNC_
+		static void print_func (spu_t* ptr_spu)
+		{
+			assert (ptr_spu);
 
-		printf ("stk:\n\n");
+			printf ("func:\n\n");
 
-		stk_dump  (&(ptr_spu -> stk), __FILE__, __LINE__);
-
-		printf ("\n");
-	}
-#endif
-
-#ifdef PRINT_FUNC
-	static void print_func (spu_t* ptr_spu)
-	{
-		assert (ptr_spu);
-
-		printf ("func:\n\n");
-
-		stk_dump (&(ptr_spu -> func), __FILE__, __LINE__);
-	}
+			stk_dump (&(ptr_spu -> func), __FILE__, __LINE__);
+		}
+	#endif
 #endif

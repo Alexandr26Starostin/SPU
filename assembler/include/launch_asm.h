@@ -1,10 +1,15 @@
 #ifndef LAUNCH_ASM_H
 #define LAUNCH_ASM_H
 
+#define PRINT_ASM_NOT
+#define PRINT_CMD_
+#define PRINT_LABELS_
+#define PRINT_FIX_UP_
+
 const size_t MAX_LEN_STR   = 50;
 const size_t MAX_LEN_LABEL = 50; 
 
-const size_t SIZE_CMD      = 128;
+const size_t SIZE_CMD      = 526;
 const size_t SIZE_LABELS   = 128;
 const size_t SIZE_FIX_UP   = 128;
 const size_t MAX_BIT       = sizeof (long) * 8;

@@ -11,11 +11,17 @@
 #include "../include/spu_run.h"
 #include "../include/launch_spu.h"
 
+#ifdef PRINT_HEADER_
+	static void print_header  (header_t* hdr);
+#endif
+
 static error_t check_header  (FILE* cmd_file, int* ptr_len_cmd);
-static void    print_header  (header_t* hdr);
 static void    creat_spu     (spu_t* ptr_spu, int len_cmd);
-static void    destroy_spu    (spu_t* ptr_spu);
-static void    read_cmd_file (spu_t* ptr_spu, FILE* cmd_file);
+static void    destroy_spu   (spu_t* ptr_spu);
+
+#define DESTROY_SPU_(cmd_file, spu) \
+	fclose     (cmd_file);          \
+	destroy_spu (&spu);              
 
 //---------------------------------------------------------------------------------------------
 
@@ -32,25 +38,19 @@ long launch_spu (FILE* cmd_file)
 
 	if (spu_error (&spu, __FILE__, __LINE__))
 	{
-		fclose     (cmd_file);
-		destroy_spu (&spu);
-
+		DESTROY_SPU_(cmd_file, spu)
 		return spu.error_in_spu;
 	}
 
-	read_cmd_file (&spu, cmd_file);
+	fread (spu.cmd, sizeof (cmd_t), spu.size_cmd, cmd_file);
 
 	if (run_spu (&spu))
 	{
-		fclose     (cmd_file);
-		destroy_spu (&spu);
-
+		DESTROY_SPU_(cmd_file, spu)
 		return spu.error_in_spu;
 	}
 
-	destroy_spu (&spu);
-	fclose   (cmd_file);
-
+	DESTROY_SPU_(cmd_file, spu)
 	return spu.error_in_spu;
 }
 
@@ -66,7 +66,9 @@ static error_t check_header (FILE* cmd_file, int* ptr_len_cmd)
 
 	fread (hdr, sizeof (header_t), SIZE_HEADER, cmd_file);
 
-	print_header (hdr);
+	#ifdef PRINT_HEADER_
+		print_header (hdr);
+	#endif
 
 	if (hdr[0] != SIGNATURE)
 	{
@@ -89,26 +91,28 @@ static error_t check_header (FILE* cmd_file, int* ptr_len_cmd)
 	return status_header;
 }
 
-static void print_header (header_t* hdr)
-{
-	assert (hdr);
-
-	printf ("hdr:\n");
-
-	for (size_t index_hdr = 0; index_hdr < SIZE_HEADER; index_hdr++)
+#ifdef PRINT_HEADER_
+	static void print_header (header_t* hdr)
 	{
-		printf ("%6ld ", index_hdr);
+		assert (hdr);
+
+		printf ("hdr:\n");
+
+		for (size_t index_hdr = 0; index_hdr < SIZE_HEADER; index_hdr++)
+		{
+			printf ("%6ld ", index_hdr);
+		}
+
+		printf ("\n");
+
+		for (size_t index_hdr = 0; index_hdr < SIZE_HEADER; index_hdr++)
+		{
+			printf ("%6x ", hdr[index_hdr]);
+		}
+
+		printf("\n--------------------------------------------------------------------------------------------------------------\n\n");
 	}
-
-	printf ("\n");
-
-	for (size_t index_hdr = 0; index_hdr < SIZE_HEADER; index_hdr++)
-	{
-		printf ("%6x ", hdr[index_hdr]);
-	}
-
-	printf("\n--------------------------------------------------------------------------------------------------------------\n\n");
-}
+#endif
 
 static void creat_spu (spu_t* ptr_spu, int len_cmd)
 {
@@ -136,10 +140,3 @@ static void destroy_spu (spu_t* ptr_spu)
 	stk_dtor (&(ptr_spu -> func));
 }
 
-static void read_cmd_file (spu_t* ptr_spu, FILE* cmd_file)
-{
-	assert (ptr_spu);
-	assert (cmd_file);
-
-	fread (ptr_spu -> cmd, sizeof (cmd_t), ptr_spu -> size_cmd, cmd_file);
-}

@@ -11,11 +11,15 @@
 
 static long read_file     (FILE*  asm_file, char** ptr_text);
 static void write_in_file (asm_t* ptr_assm, FILE* code_file);
-static void print_cmd     (asm_t* ptr_assm);
 static long len_file      (FILE*  file);  
 static void close_files   (FILE*  asm_file, FILE* cmd_file);
 static void creat_asm     (asm_t* ptr_assm);
 static void detroy_asm    (asm_t* ptr_assm);
+
+#define DESTROY_ASM_(asm_file, cmd_file, assm, text) \
+	close_files (asm_file, cmd_file); \
+	detroy_asm  (&assm); \
+	free (text);
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -41,18 +45,14 @@ long launch_asm (FILE* asm_file, FILE* cmd_file)
 
 	if (asm_error (&assm, __FILE__, __LINE__))
 	{
-		close_files (asm_file, cmd_file);
-		detroy_asm  (&assm);
-		free (text);
+		DESTROY_ASM_(asm_file, cmd_file, assm, text)
 
 		return assm.error_in_asm;
 	}
 
 	if (translate_asm (&assm, text))
 	{
-		close_files (asm_file, cmd_file);
-		detroy_asm  (&assm);
-		free (text);
+		DESTROY_ASM_(asm_file, cmd_file, assm, text)
 
 		return assm.error_in_asm;
 	}
@@ -61,20 +61,14 @@ long launch_asm (FILE* asm_file, FILE* cmd_file)
 
 	if (asm_error (&assm, __FILE__, __LINE__))
 	{
-		close_files (asm_file, cmd_file);
-		detroy_asm  (&assm);
-		free (text);
+		DESTROY_ASM_(asm_file, cmd_file, assm, text)
 
 		return assm.error_in_asm;
 	}
 
-	print_asm (&assm);
-
 	write_in_file (&assm, cmd_file);
 
-	close_files (asm_file, cmd_file);
-	detroy_asm  (&assm);
-	free (text);
+	DESTROY_ASM_(asm_file, cmd_file, assm, text)
 
 	return NOT_ERROR;
 }
@@ -98,9 +92,11 @@ static long read_file (FILE* asm_file, char** ptr_text)
 	long count_fread = (long) fread (*ptr_text, sizeof (char), count_memory, asm_file);
 	if (count_fread != count_memory)
 	{
-		printf ("count_fread  != count_memory\n");
-		printf ("count_fread  == %ld\n", count_fread);
-		printf ("count_memory == %ld\n", count_memory);
+		#ifdef PRINT_ASM_
+			printf ("count_fread  != count_memory\n");
+			printf ("count_fread  == %ld\n", count_fread);
+			printf ("count_memory == %ld\n", count_memory);
+		#endif
 
 		return (long) ERROR_IN_FREAD;
 	}
@@ -118,12 +114,9 @@ static void write_in_file (asm_t* ptr_assm, FILE* code_file)
 	hdr[1] = VERSION;
 	hdr[2] = (int) ptr_assm -> cmd_count;
 
-	print_cmd (ptr_assm);
-
 	fwrite  (hdr,             sizeof (int),  SIZE_HEADER,           code_file);
 	fwrite  (ptr_assm -> cmd, sizeof (long), ptr_assm -> cmd_count, code_file);
 }
-
 
 static long len_file (FILE* file)      
 { 
@@ -134,27 +127,6 @@ static long len_file (FILE* file)
     fseek (file, 0, SEEK_SET);
 
     return count_memory;
-}
-
-static void print_cmd (asm_t* ptr_assm)
-{
-	assert (ptr_assm);
-
-	printf ("cmd:\n");
-
-	for (size_t index_cmd = 0; index_cmd < ptr_assm -> cmd_count; index_cmd++)
-	{
-		printf ("%3ld ", index_cmd);
-	}
-
-	printf ("\n");
-
-	for (size_t index_cmd = 0; index_cmd < ptr_assm -> cmd_count; index_cmd++)
-	{
-		printf ("%3x ", (ptr_assm -> cmd)[index_cmd]);
-	}
-
-	printf ("\n\n");
 }
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -169,12 +141,12 @@ static void creat_asm (asm_t* ptr_assm)
 	ptr_assm -> fix_up_count = 0;
 	ptr_assm -> labels_count = 0;
 
-	ptr_assm -> cmd    = (int*)    calloc  (SIZE_CMD,    sizeof  (int));
+	ptr_assm -> cmd    = (int*)     calloc  (SIZE_CMD,    sizeof  (int));
 	ptr_assm -> fix_up = (fix_t*)   calloc (SIZE_FIX_UP, sizeof (fix_t));
 	ptr_assm -> labels = (label_t*) calloc (SIZE_LABELS, sizeof (label_t));
 }
 
-static void  detroy_asm  (asm_t* ptr_assm)
+static void detroy_asm (asm_t* ptr_assm)
 {
 	assert (ptr_assm);
 

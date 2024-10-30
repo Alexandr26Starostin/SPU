@@ -23,7 +23,11 @@ enum command_t
 	RET   = 0x11,
 	DRAW  = 0x12,
 	DUMP  = 0x13,
-	IDIV  = 0x14 
+	IDIV  = 0x14,
+	JAE   = 0x15,
+	JBE   = 0x16,
+	JE    = 0x17,
+	JNE   = 0x18 
 };
 
 #endif

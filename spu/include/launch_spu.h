@@ -4,6 +4,17 @@
 #include "../../stack/include/const_define_struct.h"
 #include "../../commands.h"
 
+#define PRINT_SPU_NOT
+
+#ifdef PRINT_SPU_
+	#define PRINT_CMD_
+	#define PRINT_REG_
+	#define PRINT_RAM_NOT
+	#define PRINT_STK_
+	#define PRINT_FUNC_NOT
+	#define PRINT_HEADER_
+#endif
+
 const size_t MAX_LETTERS     = 30;
 const size_t DEFAULT_LEN_STK = 32;
 
@@ -14,6 +25,8 @@ const size_t MAX_BIT  = sizeof (long) * 8;
 const int SIZE_HEADER   = 3;
 const int SIGNATURE     = 0xC0FFEE;
 const int VERSION       = 1;  
+
+const size_t len_side_of_frame = 11;
 
 const long  IMM_MASK     = 0x20;
 const long  REG_MASK     = 0x40;
@@ -30,8 +43,7 @@ enum error_t
 	SIZE_REG_EXCEED   = 8,
 	SIZE_RAM_EXCEED   = 16,
 	NOT_FIND_GUIDE    = 32,
-	INCORRECT_COMMAND = 64,
-
+	INCORRECT_COMMAND = 64
 };
 
 typedef int header_t;
